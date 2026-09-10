@@ -13,15 +13,75 @@ and `gnome-extensions enable` on a live session, not only the CLI.
 ## The fake monmux
 
 `tests/bin/monmux` is an executable shell script that answers from `tests/fixtures/`. It is the only `monmux` any automated
-thing in this repository is allowed to see.
+thing in this repository is allowed to see, and it exists **for the nested Shell**: no test spawns it.
 
-- `monmux version` and `monmux info --json` come from the captured fixtures.
-- `monmux switch …` returns whatever `MONMUX_FAKE_SWITCH` names: `ok` (exit 0), `refused` (exit 2), `failed` (exit 1). The
-  default is `refused`, so a test that forgets to set it exercises the path where nothing was written.
-- Anything else exits 70 with a message saying it is not faked. Failing loudly beats answering with something invented: a fake
-  that decides differently from the real tool turns a green suite into a lie.
+It decides nothing. Which document comes back is the caller's choice, made through the environment before the Shell starts,
+because the Shell inherits it:
 
-Phase 2 adds the `catalog list --json` and `catalog show … --json` fixtures.
+| Variable | Values | Effect |
+| --- | --- | --- |
+| `MONMUX_FAKE_INFO` | a variant name, default `writable` | `info --json` answers from `info-<variant>.json`, with that variant's own exit code |
+| `MONMUX_FAKE_VERSION` | `v0.6.0` (default) or `v0.5.0` | which monmux this pretends to be |
+| `MONMUX_FAKE_SWITCH` | a fixture name, default `refused-input-not-enabled` | `switch --json` answers from `switch-<name>.json` |
+| `MONMUX_FAKE_LOG` | a file path, unset by default | every argv the fake received, one shell-quoted line per run |
+
+`MONMUX_FAKE_LOG` is how a click is verified. After exercising the menu in the nested Shell, read that file: it shows the exact
+command line the extension built, which is the only way to prove the argv arrived as an array and not as a shell string.
+
+`MONMUX_FAKE_VERSION=v0.5.0` answers `version --json` the way the release before that flag existed does — cobra's
+`Error: unknown flag: --json` on stderr, nothing on stdout, exit 1 — because that shape is what the extension's version gate
+reads as "too old".
+
+`switch --json` exits 0 for `sent` and `dry-run`, 2 for either `refused-…` fixture and 1 for `failed`. The exit code is written
+next to the fixture name in the script rather than derived from the document's `outcome`: the pairing of the two is monmux's
+contract, and a fake that computed one from the other could not contradict it even where a test wants it to. The default is a
+refusal, so a caller that forgets to set the variable exercises the path where nothing was written.
+
+`info --json` is read-only and can still fail, so the fake pairs each variant with a code too. `checks-failing` is the state
+where `ddcutil` is missing, and the real binary answers it by printing the report on stdout anyway — the report is the
+diagnostic for exactly that failure — putting one line on stderr:
+
+```text
+Not ready: backend-not-ready: ddcutil was not found on PATH: exec: "ddcutil": executable file not found in $PATH
+```
+
+and exiting **2**, not 1. `cli.info` wraps the preflight refusal in a `readOnlyError`, and `exitCode()` unwraps that and finds
+a refusal, which is the code a refusal gets. Every other variant exits 0 with nothing on stderr. A variant the script does not
+know exits 70 rather than reaching for a fixture that may not exist.
+
+`catalog list --json` answers from the captured catalog. Anything else — `catalog show`, `doctor`, `info --show-serial`, a
+`switch` without `--json` — exits 70 with a message saying it is not faked. Failing loudly beats answering with something
+invented: a fake that decides differently from the real tool turns a green suite into a lie.
+
+### The fixtures
+
+Two kinds, and the difference matters when one of them disagrees with the real binary:
+
+| Fixture | Origin |
+| --- | --- |
+| `catalog-list.json` | captured from `monmux catalog list --json` |
+| `version.json`, `version-v0.6.0.txt` | captured from the installed monmux v0.6.0, commit `029694f`, built 2026-09-10, with `monmux version` and `monmux version --json` |
+| `version-v0.5.0.txt` | captured the same way from the release before it |
+| `info-writable.json` | captured from `monmux info --json` on the LG 38WR85QC-W |
+| every other `info-*.json` | constructed: a display situation this machine does not have |
+| every `switch-*.json` | constructed: written against [monmux's `docs/json.md`](https://github.com/leinardi/monmux/blob/main/docs/json.md) |
+
+The commit is written down because the v0.6.0 tag is not in a monmux checkout yet: that build was installed before it was
+tagged. Check these two against `monmux version --json` on the machine, not against the tags in a clone — a clone without the
+tag says nothing about which binary is installed.
+
+The `switch-*.json` documents are constructed because no agent may run `monmux switch`, dry run included — see
+[AGENTS.md](../AGENTS.md). They follow the published contract field for field, and the human phase re-captures them from the
+real binary.
+
+`info-not-write-enabled.json` deserves a note of its own. It is a display that matches the catalog **exactly** and whose model
+is not write-enabled, so `enabledInputs` is empty while the catalog still records inputs for it — the state the menu greys out
+with a "test and report this monitor" call to action. Today's monmux cannot produce it: only write-enabled entries carry EDID
+identities, and matching is on identities alone, so a non-write-enabled model always comes back as `match: none`. The contract
+permits it, a later catalog entry can create it, and the extension has to render it correctly before then.
+
+Fixtures carry synthetic serials and nothing else, and today they carry none at all: every one of them is redacted, which is
+what `monmux` prints unless `--show-serial` is passed. A real serial must never be committed.
 
 ## How the suite refuses to touch hardware
 
@@ -35,8 +95,10 @@ Two layers, and the second is the one that matters:
    first statement of the module, so it would run before the guard and make it a guard over nothing. Everything local arrives
    through a dynamic `import()` after the check.
 
-There is no third layer inside the tests, because there is nothing to guard: no test spawns a process. If one ever needs to,
-it drives the fake, and it still passes through the check above.
+There is no third layer inside the tests, because there is nothing to guard: **no test spawns a process, and none may.** The
+fake exists for the nested Shell, not for the suite — a unit test drives a module directly, with a runner it supplies itself,
+so a subprocess never enters the picture. The `PATH` guard above stays as the belt for that rule rather than as support for an
+exception to it: it is what makes a suite that started spawning something unable to reach a real monitor.
 
 You can prove the guard works:
 

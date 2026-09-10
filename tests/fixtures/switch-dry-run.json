@@ -1,0 +1,19 @@
+{
+  "outcome": "dry-run",
+  "writeStatus": "none",
+  "backend": "ddcutil",
+  "display": {
+    "label": "card1-DP-1",
+    "handle": "card1-DP-1"
+  },
+  "model": "LG 38WR85QC-W",
+  "input": "usb-c",
+  "inputLabel": "USB-C",
+  "operation": {
+    "mechanism": "lg-alt-input",
+    "value": 209,
+    "valueHex": "0xD1"
+  },
+  "command": "/usr/bin/ddcutil --edid <redacted; --show-serial to print> setvcp 0xF4 0xD1 --i2c-source-addr=0x50 --noverify",
+  "assumed": false
+}

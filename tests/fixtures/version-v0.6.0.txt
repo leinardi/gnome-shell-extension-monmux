@@ -1,0 +1,1 @@
+monmux v0.6.0 (commit 029694f0e9b176b63edf2447075a2e14064cc0cc, built 2026-09-10T21:42:35Z)

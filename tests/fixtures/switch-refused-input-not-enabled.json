@@ -1,0 +1,20 @@
+{
+  "outcome": "refused",
+  "writeStatus": "none",
+  "backend": "ddcutil",
+  "assumed": false,
+  "refusal": {
+    "reason": "input-not-enabled",
+    "explanation": "The requested input is not enabled for this model.",
+    "detail": "Requested hdmi1 on LG 38WR85QC-W; enabled inputs: dp, usb-c.",
+    "detected": [
+      {
+        "manufacturer": "GSM",
+        "productCode": 30675,
+        "serialNumber": 0,
+        "serialString": "",
+        "modelName": "LG ULTRAWIDE"
+      }
+    ]
+  }
+}

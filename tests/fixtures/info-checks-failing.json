@@ -1,0 +1,42 @@
+{
+  "backend": "ddcutil",
+  "displays": [
+    {
+      "label": "card1-DP-1",
+      "handle": "card1-DP-1",
+      "handlePrivate": false,
+      "writable": true,
+      "status": "ok",
+      "identity": {
+        "manufacturer": "GSM",
+        "productCode": 30675,
+        "serialNumber": 0,
+        "serialString": "",
+        "modelName": "LG ULTRAWIDE"
+      },
+      "match": "exact",
+      "model": "LG 38WR85QC-W",
+      "enabledInputs": [
+        "dp",
+        "usb-c"
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "name": "ddcutil binary",
+      "ok": false,
+      "detail": "backend-not-ready: ddcutil was not found on PATH: exec: \"ddcutil\": executable file not found in $PATH"
+    },
+    {
+      "name": "displays",
+      "ok": true,
+      "detail": "1 connected display"
+    },
+    {
+      "name": "card1-DP-1",
+      "ok": true,
+      "detail": "ok"
+    }
+  ]
+}

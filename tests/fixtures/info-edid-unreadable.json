@@ -1,0 +1,54 @@
+{
+  "backend": "ddcutil",
+  "displays": [
+    {
+      "label": "card1-HDMI-A-1",
+      "handle": "card1-HDMI-A-1",
+      "handlePrivate": false,
+      "writable": false,
+      "status": "edid-unreadable",
+      "identity": {
+        "manufacturer": "",
+        "productCode": 0,
+        "serialNumber": 0,
+        "serialString": "",
+        "modelName": ""
+      },
+      "match": "none",
+      "model": "",
+      "enabledInputs": []
+    }
+  ],
+  "checks": [
+    {
+      "name": "ddcutil binary",
+      "ok": true,
+      "detail": "/usr/bin/ddcutil"
+    },
+    {
+      "name": "ddcutil sha256",
+      "ok": true,
+      "detail": "2e8fdb082a0b44bd1f8c0b1f03a0e88ec8b4def9a7f097703f435f5aaf03f3de"
+    },
+    {
+      "name": "ddcutil version",
+      "ok": true,
+      "detail": "at least 2.2"
+    },
+    {
+      "name": "ddcutil options",
+      "ok": true,
+      "detail": "--edid, --i2c-source-addr, --noverify"
+    },
+    {
+      "name": "displays",
+      "ok": true,
+      "detail": "1 connected display"
+    },
+    {
+      "name": "card1-HDMI-A-1",
+      "ok": false,
+      "detail": "edid-unreadable"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "outcome": "refused",
+  "writeStatus": "none",
+  "backend": "ddcutil",
+  "assumed": false,
+  "refusal": {
+    "reason": "multiple-candidates",
+    "explanation": "More than one attached display could be the one meant; pin one with --serial.",
+    "detail": "Matched: card1-DP-1, card1-DP-2.",
+    "detected": [
+      {
+        "manufacturer": "GSM",
+        "productCode": 30675,
+        "serialNumber": 0,
+        "serialString": "",
+        "modelName": "LG ULTRAWIDE"
+      },
+      {
+        "manufacturer": "GSM",
+        "productCode": 30675,
+        "serialNumber": 0,
+        "serialString": "",
+        "modelName": "LG ULTRAWIDE"
+      }
+    ]
+  }
+}

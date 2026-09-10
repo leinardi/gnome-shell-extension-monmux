@@ -5,75 +5,210 @@
 # Copyright (c) 2026 Roberto Leinardi
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
-# The only `monmux` the test suite and `make ext-nested` are ever allowed to
-# see. It answers from tests/fixtures/ and touches no monitor, which is what
-# makes a nested Shell safe for an agent to start: with tests/bin first on PATH,
-# a click in the panel menu reaches this script, not the real binary.
+# The only `monmux` `make ext-nested` is ever allowed to see. It answers from
+# tests/fixtures/ and touches no monitor, which is what makes a nested Shell safe
+# for an agent to start: with tests/bin first on PATH, a click in the panel menu
+# reaches this script, not the real binary.
+#
+# It exists for the nested Shell alone. No test spawns it, or anything else: a
+# unit test drives a module directly with a runner it supplies itself.
 #
 # Keep it dumb. Anything it decides is policy the extension is not allowed to
 # have, and a fake that decides differently from the real tool is a test that
-# proves nothing.
+# proves nothing. Which document comes back is the caller's choice, made through
+# the environment variables below, never this script's inference from the
+# command line.
 
 set -euo pipefail
 
 FIXTURES="$(cd "$(dirname "${BASH_SOURCE[0]}")/../fixtures" && pwd)"
 
+# record_argv appends this invocation to $MONMUX_FAKE_LOG, one line per run, so
+# an agent can read back exactly what the extension asked for after a click in
+# the nested Shell. Each argument is shell-quoted: a whole command smuggled into
+# one argument shows up as one quoted word rather than as several.
+record_argv() {
+  [[ -n "${MONMUX_FAKE_LOG:-}" ]] || return 0
+
+  # An unwritable path would otherwise abort the run on the redirect below,
+  # under set -e, before anything was answered - and the extension would report
+  # that as monmux failing. Say whose fault it is instead.
+  # stderr is redirected before the append, not after: redirections are applied
+  # left to right, and the other order lets bash's own "no such file" reach the
+  # terminal before /dev/null is in place.
+  if ! : 2>/dev/null >>"${MONMUX_FAKE_LOG}"; then
+    echo "fake monmux: cannot write the argv log at ${MONMUX_FAKE_LOG}" >&2
+    exit 70
+  fi
+
+  local rendered=""
+  local argument
+  for argument in "$@"; do
+    rendered+="$(printf '%q' "${argument}") "
+  done
+
+  printf '%s\n' "${rendered% }" >>"${MONMUX_FAKE_LOG}"
+}
+
 fixture() {
   local name="$1"
   if [[ ! -f "${FIXTURES}/${name}" ]]; then
-    echo "fake monmux: no fixture ${name}; phase 1 ships version and info --json only" >&2
+    echo "fake monmux: no fixture ${name}" >&2
     exit 70
   fi
   cat "${FIXTURES}/${name}"
 }
 
-# `switch` outcome is chosen by the caller, not by this script: MONMUX_FAKE_SWITCH
-# is `ok` (exit 0), `refused` (exit 2) or `failed` (exit 1). Default is a refusal,
-# so a test that forgets to set it exercises the path where nothing was written.
-fake_switch() {
-  case "${MONMUX_FAKE_SWITCH:-refused}" in
-    ok)
-      echo "Sent: card1-DP-1 -> dp (LG 38WR85QC-W, lg-alt-input 0xD0)"
-      exit 0
-      ;;
-    refused)
-      echo "Refused: input-not-enabled: dp is not write-enabled for this model. No DDC write was performed." >&2
-      exit 2
-      ;;
-    failed)
-      echo "Error: ddcutil exited 1. The write status is unknown." >&2
-      exit 1
-      ;;
+has_flag() {
+  local wanted="$1"
+  shift
+
+  local argument
+  for argument in "$@"; do
+    if [[ "${argument}" == "${wanted}" ]]; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+# MONMUX_FAKE_VERSION picks which monmux this pretends to be. `v0.5.0` is the
+# release before `version --json` existed, and it answers the flag the way cobra
+# does for a flag it has never heard of: prose on stderr and exit 1, with nothing
+# on stdout. That is the shape the extension's version gate reads as "too old",
+# so it has to be reproducible here.
+fake_version() {
+  local version="${MONMUX_FAKE_VERSION:-v0.6.0}"
+
+  case "${version}" in
+    v0.5.0 | v0.6.0) ;;
     *)
-      echo "fake monmux: unknown MONMUX_FAKE_SWITCH=${MONMUX_FAKE_SWITCH}" >&2
+      echo "fake monmux: unknown MONMUX_FAKE_VERSION=${version}" >&2
       exit 70
       ;;
   esac
+
+  if ! has_flag --json "$@"; then
+    fixture "version-${version}.txt"
+    return
+  fi
+
+  if [[ "${version}" == "v0.5.0" ]]; then
+    echo "Error: unknown flag: --json" >&2
+    exit 1
+  fi
+
+  fixture version.json
 }
 
-case "${1:-}" in
+# MONMUX_FAKE_INFO names the display situation, one fixture per variant, and the
+# exit code and diagnostic that go with it are spelled out here for the same
+# reason fake_switch spells its own out.
+#
+# `info` is read-only and still fails: a backend whose preflight refused prints
+# the report anyway - it is the diagnostic for exactly that failure - then one
+# line on stderr, and exits. The code is 2, not 1: cli.info wraps the preflight
+# refusal in a readOnlyError, and exitCode() unwraps it and finds a refusal.
+fake_info() {
+  if ! has_flag --json "$@"; then
+    echo "fake monmux: only 'info --json' is faked" >&2
+    exit 70
+  fi
+
+  if has_flag --show-serial "$@"; then
+    echo "fake monmux: 'info --json --show-serial' is not faked yet" >&2
+    exit 70
+  fi
+
+  local variant="${MONMUX_FAKE_INFO:-writable}"
+  local code=0
+  local diagnostic=""
+
+  case "${variant}" in
+    writable | unknown-monitor | not-write-enabled | edid-unreadable | two-identical) ;;
+    checks-failing)
+      code=2
+      # shellcheck disable=SC2016  # $PATH is literal here: it is inside the text
+      # Go's exec.LookPath produces, and expanding it would stop this matching
+      # what the real monmux prints.
+      diagnostic='Not ready: backend-not-ready: ddcutil was not found on PATH: exec: "ddcutil": executable file not found in $PATH'
+      ;;
+    *)
+      echo "fake monmux: unknown MONMUX_FAKE_INFO=${variant}" >&2
+      exit 70
+      ;;
+  esac
+
+  fixture "info-${variant}.json"
+
+  if [[ -n "${diagnostic}" ]]; then
+    printf '%s\n' "${diagnostic}" >&2
+  fi
+
+  exit "${code}"
+}
+
+# MONMUX_FAKE_SWITCH names the fixture, and the exit code that goes with it is
+# spelled out next to it rather than read out of the document: the pairing of
+# outcome, writeStatus and exit code is monmux's contract, and a fake that
+# derived one from another could not contradict it even when a test wants it to.
+#
+# The default is a refusal, so a caller that forgets to set it exercises the path
+# where nothing was written.
+fake_switch() {
+  if ! has_flag --json "$@"; then
+    echo "fake monmux: only 'switch --json' is faked" >&2
+    exit 70
+  fi
+
+  local outcome="${MONMUX_FAKE_SWITCH:-refused-input-not-enabled}"
+  local code
+
+  case "${outcome}" in
+    sent | dry-run) code=0 ;;
+    refused-input-not-enabled | refused-multiple-candidates) code=2 ;;
+    failed) code=1 ;;
+    *)
+      echo "fake monmux: unknown MONMUX_FAKE_SWITCH=${outcome}" >&2
+      exit 70
+      ;;
+  esac
+
+  fixture "switch-${outcome}.json"
+  exit "${code}"
+}
+
+fake_catalog() {
+  if [[ "${1:-}" == "list" ]] && has_flag --json "$@"; then
+    fixture catalog-list.json
+    return
+  fi
+
+  echo "fake monmux: only 'catalog list --json' is faked" >&2
+  exit 70
+}
+
+record_argv "$@"
+
+command="${1:-}"
+shift || true
+
+case "${command}" in
   version)
-    fixture version.txt
+    fake_version "$@"
     ;;
   info)
-    if [[ " ${*} " == *" --json "* ]]; then
-      fixture info.json
-    else
-      echo "fake monmux: only 'info --json' is faked" >&2
-      exit 70
-    fi
+    fake_info "$@"
     ;;
   switch)
-    fake_switch
+    fake_switch "$@"
     ;;
   catalog)
-    # Phase 2 adds `catalog list --json` and `catalog show <model> --json`
-    # fixtures. Failing loudly beats answering with something invented.
-    echo "fake monmux: 'catalog' is not faked yet" >&2
-    exit 70
+    fake_catalog "$@"
     ;;
   *)
-    echo "fake monmux: unsupported command '${1:-}'" >&2
+    echo "fake monmux: unsupported command '${command}'" >&2
     exit 70
     ;;
 esac
