@@ -1,0 +1,131 @@
+# The JavaScript hooks below are `language: system`, which means they use the
+# node_modules in this working copy rather than an environment pre-commit builds
+# for them. Run `make ext-deps` (npm ci) once after cloning, or they will fail
+# with "eslint: not found".
+#
+# They have to be `system`: eslint-config-gnome is not on npm, it is a git
+# dependency pinned to a commit, and pre-commit's own node environment installs
+# from a hook's `additional_dependencies` list, which cannot express that pin
+# together with the lockfile the rest of the toolchain is resolved from. One
+# npm install, driven by package-lock.json, is the only way IDE, hooks, Makefile
+# and CI all run the same ESLint against the same config.
+#
+# commit-msg as well as pre-commit, so that `make pre-commit-install` installs
+# the conventional-commit check too.
+default_install_hook_types: [pre-commit, commit-msg]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-merge-conflict
+      # Fixtures are byte-for-byte captures of monmux's output, and a formatter
+      # that tidies them makes them prove something other than what was captured.
+      - id: end-of-file-fixer
+        exclude: ^tests/fixtures/
+      - id: trailing-whitespace
+        exclude: ^tests/fixtures/
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-added-large-files
+  - repo: https://github.com/checkmake/checkmake.git
+    rev: v0.3.2
+    hooks:
+      - id: checkmake
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+        name: actionlint
+        files: ^\.github/workflows/.*\.(yml|yaml)$
+        args: ["-shellcheck", "shellcheck -S error"]
+      - id: actionlint
+        alias: actionlint-oneline
+        name: actionlint (one line per one error)
+        files: ^\.github/workflows/.*\.(yml|yaml)$
+        args: ["-oneline", "-shellcheck", "shellcheck -S error"]
+        stages: [manual]
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.23.2
+    hooks:
+      - id: markdownlint-cli2
+        additional_dependencies:
+          - markdownlint-rule-table-format@1.0.3
+  - repo: local
+    hooks:
+      - id: shellcheck
+        name: shellcheck
+        entry: shellcheck
+        language: system
+        types: [shell]
+        args: ["-x"]
+      - id: shellcheck
+        alias: shellcheck-diff-output
+        name: shellcheck (diff output)
+        entry: shellcheck
+        language: system
+        types: [shell]
+        args: ["-f", "diff", "-x"]
+        stages: [manual]
+      - id: shellcheck
+        alias: shellcheck-json-output
+        name: shellcheck (json output)
+        entry: shellcheck
+        language: system
+        types: [shell]
+        args: ["-f", "json", "-x"]
+        stages: [manual]
+      - id: prettier-yaml
+        name: prettier-yaml
+        entry: prettier
+        language: node
+        additional_dependencies: ["prettier@3.7.4"]
+        files: \.(yml|yaml)$
+        args: ["--write"]
+      - id: ext-eslint
+        name: eslint
+        entry: npm run lint
+        language: system
+        pass_filenames: false
+        files: ^((src|tests)/.*\.js|eslint\.config\.js|package(-lock)?\.json)$
+      - id: ext-typecheck
+        name: tsc --checkJs
+        entry: npm run typecheck
+        language: system
+        pass_filenames: false
+        files: ^((src|tests)/.*\.js|eslint\.config\.js|tsconfig\.json|ambient\.d\.ts|package(-lock)?\.json)$
+      - id: ext-test
+        name: gjs tests
+        entry: npm run test
+        language: system
+        pass_filenames: false
+        files: ^(src/lib/|tests/)
+      - id: ext-schemas
+        name: gsettings schema
+        entry: glib-compile-schemas --strict --dry-run src/schemas
+        language: system
+        pass_filenames: false
+        files: ^src/schemas/
+      - id: ext-metadata
+        name: metadata.json
+        entry: node scripts/check-metadata.js
+        language: system
+        pass_filenames: false
+        files: ^(src/metadata\.json|package\.json|src/schemas/.*\.gschema\.xml|scripts/check-metadata\.js)$
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+      - id: yamllint
+        alias: yamllint-parsable
+        name: "yamllint (parsable output)"
+        args: ["--format", "parsable"]
+        stages: [manual]
+  # No --force-scope, like monmux: this history writes `docs:` and `ci:` without
+  # one, and CONTRIBUTING.md allows that.
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]

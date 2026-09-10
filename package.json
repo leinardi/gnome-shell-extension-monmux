@@ -1,0 +1,30 @@
+{
+  "name": "gnome-shell-extension-monmux",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "GNOME Shell extension that switches supported monitors between video inputs through the monmux CLI",
+  "license": "GPL-2.0-or-later",
+  "author": "Roberto Leinardi",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leinardi/gnome-shell-extension-monmux.git"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "PATH=\"$PWD/tests/bin:$PATH\" gjs -m tests/main.js"
+  },
+  "devDependencies": {
+    "@eslint/config-helpers": "0.4.2",
+    "@eslint/js": "9.39.5",
+    "@girs/gjs": "4.7.0",
+    "@girs/gnome-shell": "50.0.4",
+    "eslint": "9.39.5",
+    "eslint-config-gnome": "git+https://gitlab.gnome.org/World/javascript/eslint-config-gnome.git#c479d059e8d9ea99c3b53c2ea43abf7fdb05eb51",
+    "eslint-plugin-jsdoc": "48.11.0",
+    "globals": "17.12.0",
+    "typescript": "5.9.3"
+  }
+}

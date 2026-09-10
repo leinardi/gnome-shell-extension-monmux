@@ -1,0 +1,21 @@
+# Intellij
+.idea/*
+!.idea/codeStyles/
+!.idea/copyright/
+*.iml
+
+# --- Extension build outputs ---
+# `make ext-pack` writes the shell-extension zip here.
+/dist/
+# `make ext-schemas` compiles the schema next to its source.
+/src/schemas/gschemas.compiled
+
+# --- Node ---
+node_modules/
+
+# IDE/editor (optional to add)
+.vscode/
+*.code-workspace
+
+# macOS cruft
+.DS_Store

@@ -1,0 +1,9 @@
+# .gitignore
+*.iml
+.idea/*
+
+# ESLint owns JavaScript formatting in this repository: eslint-config-gnome is
+# what e.g.o reviewers read the code against, and prettier disagrees with it on
+# indentation, quotes and wrapping. Two formatters over the same files is a
+# fight nobody wins, so prettier never sees JS here.
+*.js
