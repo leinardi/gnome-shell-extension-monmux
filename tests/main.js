@@ -28,12 +28,17 @@ import System from 'system';
 // property a safety boundary should depend on.
 requireFakeMonmuxOnPath();
 
-const {finish} = await import('./harness.js');
+const {finish, settle} = await import('./harness.js');
 
 await import('./exitCode.test.js');
 await import('./links.test.js');
+await import('./monmux.test.js');
 await import('./reasons.test.js');
 await import('./version.test.js');
+
+// Importing a test file only registers its tests; an asynchronous one is still
+// running when its module finishes. Nothing may be reported before they land.
+await settle();
 
 finish();
 

@@ -52,22 +52,63 @@ export function describe(name, body) {
     }
 }
 
+/** @type {Promise<void>[]} */
+const pending = [];
+
 /**
  * Run one test. A test fails by throwing; the assertions below do the throwing.
  *
+ * A body that returns a promise is awaited by {@link settle} instead of being
+ * dropped. Without that an async test would count as passed the moment it hit
+ * its first await, and every assertion after that would be a failure nobody
+ * ever saw — which is worse than having no test at all.
+ *
  * @param {string} name What this test asserts.
- * @param {() => void} body The test.
+ * @param {() => (void | Promise<void>)} body The test.
  * @returns {void}
  */
 export function it(name, body) {
     const label = suite ? `${suite} — ${name}` : name;
+
+    let result;
     try {
-        body();
-        passed++;
+        result = body();
     } catch (error) {
-        const detail = error instanceof Error ? error.message : String(error);
-        failures.push(`${label}\n    ${detail}`);
+        record(label, error);
+
+        return;
     }
+
+    if (result instanceof Promise) {
+        pending.push(result.then(() => {
+            passed++;
+        }, error => record(label, error)));
+
+        return;
+    }
+
+    passed++;
+}
+
+/**
+ * Wait for every asynchronous test to finish.
+ *
+ * Call it once, after the last import and before {@link finish}.
+ *
+ * @returns {Promise<void>} Resolves when nothing is outstanding.
+ */
+export async function settle() {
+    await Promise.all(pending.splice(0));
+}
+
+/**
+ * @param {string} label The test's name.
+ * @param {unknown} error What it threw.
+ * @returns {void}
+ */
+function record(label, error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    failures.push(`${label}\n    ${detail}`);
 }
 
 /**
