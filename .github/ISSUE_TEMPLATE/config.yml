@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🖥️ My monitor is missing, or one of its inputs is greyed out
+    url: https://github.com/leinardi/monmux/issues/new?template=monitor_report.md
+    about: The supported-monitor catalog lives in monmux, not in this extension. File a monitor report there.
+  - name: 🛠️ Something is wrong with the monmux command itself
+    url: https://github.com/leinardi/monmux/issues/new/choose
+    about: "Switching, refusals, identification, ddcutil/m1ddc, permissions, exit codes: if it reproduces in a terminal, it belongs to monmux."
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/leinardi/gnome-shell-extension-monmux/security/policy
+    about: Do not open a public issue for security vulnerabilities. See SECURITY.md for the private reporting process.

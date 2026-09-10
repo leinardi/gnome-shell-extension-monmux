@@ -1,0 +1,221 @@
+name: CI
+
+# No job here runs the real monmux, and none of them touches a monitor. There is
+# no monitor in CI, and the rule that no automation writes to one is not
+# suspended because the automation is called a workflow - AGENTS.md,
+# docs/testing.md. The test suite refuses to start unless the monmux on PATH is
+# the fake in tests/bin, so a runner needs neither monmux nor ddcutil installed.
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: "${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  extension:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      # gjs runs the test suite; libglib2.0-bin provides glib-compile-schemas;
+      # gnome-shell-common provides `gnome-extensions`, which packs the zip;
+      # unzip is what scripts/check-bundle.js reads the packed zip with.
+      - name: Install the GNOME toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y gjs libglib2.0-bin gnome-shell-common unzip
+
+      - name: Install the node toolchain
+        run: npm ci
+
+      - name: Lint
+        run: make ext-lint
+
+      - name: Type-check
+        run: make ext-typecheck
+
+      - name: Test
+        run: make ext-test
+
+      - name: Compile the schema
+        run: make ext-schemas
+
+      - name: Pack the extension
+        run: make ext-pack
+
+      - name: Upload the packed extension
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: shell-extension-zip
+          path: dist/*.shell-extension.zip
+          if-no-files-found: error
+
+  actionlint:
+    # Reports inline PR review comments over a diff range; a push or a manual
+    # dispatch has neither a pull request to comment on nor a base ref to diff
+    # against.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Run actionlint via pre-commit + reviewdog
+        uses: leinardi/gha-pre-commit-reviewdog-actions/actionlint@969e0363ec9fc1de66f65ca3d37c8dd871ac3c19 # v1.0.0
+        with:
+          from-ref: ${{ github.event.pull_request.base.sha }}
+          to-ref: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  pre-commit-hooks:
+    # Reports inline PR review comments over a diff range; a push or a manual
+    # dispatch has neither a pull request to comment on nor a base ref to diff
+    # against.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # ext-schemas needs glib-compile-schemas; ext-metadata needs node, which
+      # the composite action's runner already has.
+      - name: Install glib-compile-schemas
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libglib2.0-bin
+
+      # ext-eslint, ext-typecheck and ext-test are deliberately absent: they are
+      # `language: system` hooks that need this repository's node_modules, which
+      # the composite action does not install. The `extension` job above is the
+      # real thing and runs all three.
+      - name: Run pre-commit hooks + reviewdog diff
+        uses: leinardi/gha-pre-commit-reviewdog-actions/pre-commit-hooks@969e0363ec9fc1de66f65ca3d37c8dd871ac3c19 # v1.0.0
+        with:
+          from-ref: ${{ github.event.pull_request.base.sha }}
+          to-ref: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          hooks: |
+            check-merge-conflict
+            end-of-file-fixer
+            trailing-whitespace
+            check-yaml
+            check-json
+            check-toml
+            check-added-large-files
+            checkmake
+            prettier-yaml
+            ext-schemas
+            ext-metadata
+
+  markdownlint:
+    # Reports inline PR review comments over a diff range; a push or a manual
+    # dispatch has neither a pull request to comment on nor a base ref to diff
+    # against.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Run markdownlint-cli2 via pre-commit + reviewdog
+        uses: leinardi/gha-pre-commit-reviewdog-actions/markdownlint-cli2@969e0363ec9fc1de66f65ca3d37c8dd871ac3c19 # v1.0.0
+        with:
+          from-ref: ${{ github.event.pull_request.base.sha }}
+          to-ref: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  shellcheck:
+    # Reports inline PR review comments over a diff range; a push or a manual
+    # dispatch has neither a pull request to comment on nor a base ref to diff
+    # against.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Run shellcheck via pre-commit + reviewdog
+        uses: leinardi/gha-pre-commit-reviewdog-actions/shellcheck@969e0363ec9fc1de66f65ca3d37c8dd871ac3c19 # v1.0.0
+        with:
+          from-ref: ${{ github.event.pull_request.base.sha }}
+          to-ref: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  yamllint:
+    # Reports inline PR review comments over a diff range; a push or a manual
+    # dispatch has neither a pull request to comment on nor a base ref to diff
+    # against.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Run yamllint via pre-commit + reviewdog
+        uses: leinardi/gha-pre-commit-reviewdog-actions/yamllint@969e0363ec9fc1de66f65ca3d37c8dd871ac3c19 # v1.0.0
+        with:
+          from-ref: ${{ github.event.pull_request.base.sha }}
+          to-ref: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  conventional-commits:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Validate the commit messages
+        uses: leinardi/gha-pre-commit-reviewdog-actions/conventional-commits@969e0363ec9fc1de66f65ca3d37c8dd871ac3c19 # v1.0.0
+        with:
+          from-ref: ${{ github.event.pull_request.base.sha }}
+          to-ref: ${{ github.event.pull_request.head.sha }}
