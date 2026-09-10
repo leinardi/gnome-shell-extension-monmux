@@ -50,9 +50,19 @@ export const Outcome = Object.freeze({
  * @enum {string}
  */
 export const WriteStatus = Object.freeze({
-    /** A write was performed. */
-    WRITTEN: 'written',
-    /** No write was performed. monmux promises this only on a refusal. */
+    /**
+     * The input-switch command was sent. That is monmux's own claim, and it is
+     * deliberately weaker than "the monitor switched": monmux never reads a
+     * monitor back, so nothing downstream may upgrade this to a confirmation.
+     */
+    SENT: 'sent',
+    /**
+     * No write was performed. monmux makes this promise in two places: a
+     * refusal, which exits 2, and a dry run, which exits 0. So `none` does not
+     * imply a refusal, and a dry-run document carrying it does not contradict
+     * its exit code — only the mapping in this module ties `none` to exit 2,
+     * because the exit code alone cannot tell a dry run from a send.
+     */
     NONE: 'none',
     /** The tool may or may not have written before it failed. */
     UNKNOWN: 'unknown',
@@ -93,7 +103,7 @@ export function outcomeForExitCode(code) {
         return {
             code,
             outcome: Outcome.SENT,
-            writeStatus: WriteStatus.WRITTEN,
+            writeStatus: WriteStatus.SENT,
         };
     case EXIT_REFUSED:
         return {

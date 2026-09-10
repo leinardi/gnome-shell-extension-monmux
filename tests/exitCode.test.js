@@ -25,7 +25,7 @@ describe('outcomeForExitCode', () => {
         assertDeepEqual(outcomeForExitCode(0), {
             code: 0,
             outcome: Outcome.SENT,
-            writeStatus: WriteStatus.WRITTEN,
+            writeStatus: WriteStatus.SENT,
         });
     });
 

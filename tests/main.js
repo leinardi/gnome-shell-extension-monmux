@@ -31,6 +31,9 @@ requireFakeMonmuxOnPath();
 const {finish} = await import('./harness.js');
 
 await import('./exitCode.test.js');
+await import('./links.test.js');
+await import('./reasons.test.js');
+await import('./version.test.js');
 
 finish();
 
