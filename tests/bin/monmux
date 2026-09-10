@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+#
+# This file is part of the monmux GNOME Shell extension.
+#
+# Copyright (c) 2026 Roberto Leinardi
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# The only `monmux` the test suite and `make ext-nested` are ever allowed to
+# see. It answers from tests/fixtures/ and touches no monitor, which is what
+# makes a nested Shell safe for an agent to start: with tests/bin first on PATH,
+# a click in the panel menu reaches this script, not the real binary.
+#
+# Keep it dumb. Anything it decides is policy the extension is not allowed to
+# have, and a fake that decides differently from the real tool is a test that
+# proves nothing.
+
+set -euo pipefail
+
+FIXTURES="$(cd "$(dirname "${BASH_SOURCE[0]}")/../fixtures" && pwd)"
+
+fixture() {
+  local name="$1"
+  if [[ ! -f "${FIXTURES}/${name}" ]]; then
+    echo "fake monmux: no fixture ${name}; phase 1 ships version and info --json only" >&2
+    exit 70
+  fi
+  cat "${FIXTURES}/${name}"
+}
+
+# `switch` outcome is chosen by the caller, not by this script: MONMUX_FAKE_SWITCH
+# is `ok` (exit 0), `refused` (exit 2) or `failed` (exit 1). Default is a refusal,
+# so a test that forgets to set it exercises the path where nothing was written.
+fake_switch() {
+  case "${MONMUX_FAKE_SWITCH:-refused}" in
+    ok)
+      echo "Sent: card1-DP-1 -> dp (LG 38WR85QC-W, lg-alt-input 0xD0)"
+      exit 0
+      ;;
+    refused)
+      echo "Refused: input-not-enabled: dp is not write-enabled for this model. No DDC write was performed." >&2
+      exit 2
+      ;;
+    failed)
+      echo "Error: ddcutil exited 1. The write status is unknown." >&2
+      exit 1
+      ;;
+    *)
+      echo "fake monmux: unknown MONMUX_FAKE_SWITCH=${MONMUX_FAKE_SWITCH}" >&2
+      exit 70
+      ;;
+  esac
+}
+
+case "${1:-}" in
+  version)
+    fixture version.txt
+    ;;
+  info)
+    if [[ " ${*} " == *" --json "* ]]; then
+      fixture info.json
+    else
+      echo "fake monmux: only 'info --json' is faked" >&2
+      exit 70
+    fi
+    ;;
+  switch)
+    fake_switch
+    ;;
+  catalog)
+    # Phase 2 adds `catalog list --json` and `catalog show <model> --json`
+    # fixtures. Failing loudly beats answering with something invented.
+    echo "fake monmux: 'catalog' is not faked yet" >&2
+    exit 70
+    ;;
+  *)
+    echo "fake monmux: unsupported command '${1:-}'" >&2
+    exit 70
+    ;;
+esac

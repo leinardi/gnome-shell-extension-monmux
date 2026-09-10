@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  This file is part of the monmux GNOME Shell extension.
+
+  Copyright (c) 2026 Roberto Leinardi
+  SPDX-License-Identifier: GPL-2.0-or-later
+
+  No keys yet. The schema exists from the first commit because metadata.json
+  names it and the Shell resolves it at load time, and because a schema added
+  later is a schema every installed copy has to be migrated onto.
+-->
+<schemalist gettext-domain="gnome-shell-extension-monmux">
+  <schema id="org.gnome.shell.extensions.monmux" path="/org/gnome/shell/extensions/monmux/">
+  </schema>
+</schemalist>

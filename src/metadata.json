@@ -1,0 +1,9 @@
+{
+  "uuid": "monmux@leinardi.github.io",
+  "name": "monmux",
+  "description": "Switch supported monitors between video inputs from the top panel. Every decision about what may be written to which monitor is taken by the monmux command-line tool, which must be installed separately; this extension only shows what it reports and asks it to switch.",
+  "shell-version": ["46", "47", "48", "49", "50"],
+  "url": "https://github.com/leinardi/gnome-shell-extension-monmux",
+  "settings-schema": "org.gnome.shell.extensions.monmux",
+  "gettext-domain": "gnome-shell-extension-monmux"
+}
