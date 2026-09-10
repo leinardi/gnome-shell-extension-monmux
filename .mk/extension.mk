@@ -92,10 +92,20 @@ ext-install: ## Install the packed zip into the current user's session
 	@echo "  X11:     Alt+F2, then 'r'."
 	@echo "Then: gnome-extensions enable $(EXT_UUID)"
 
+# G_MESSAGES_DEBUG names two log domains rather than `all`. `all` turns on
+# debug-level output for every library in the process, and dconf alone then
+# prints a watch/unwatch line per settings path per extension - hundreds of them
+# around startup and teardown, which is exactly when this session is worth
+# reading. The warnings this target exists to surface are not debug-level and
+# print either way; naming the domains only adds this extension's own
+# console.debug() back. Override it when you need somebody else's library:
+# make ext-nested G_MESSAGES_DEBUG=all
+G_MESSAGES_DEBUG ?= GNOME Shell Gjs
+
 .PHONY: ext-nested
 ext-nested: ## Start a nested GNOME Shell that can only see the fake monmux
 	@PATH="$(REPO_ROOT)/tests/bin:$$PATH" \
-	  G_MESSAGES_DEBUG=all \
+	  G_MESSAGES_DEBUG="$(G_MESSAGES_DEBUG)" \
 	  dbus-run-session -- gnome-shell --devkit --wayland
 
 .PHONY: ext-logs

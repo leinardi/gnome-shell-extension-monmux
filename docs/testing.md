@@ -53,7 +53,10 @@ On a machine without one it prints `no monmux on PATH`. Neither runs a test.
 make ext-nested
 ```
 
-starts `gnome-shell --devkit --wayland` under `dbus-run-session` with `tests/bin` first on `PATH` and `G_MESSAGES_DEBUG=all`.
+starts `gnome-shell --devkit --wayland` under `dbus-run-session` with `tests/bin` first on `PATH` and `G_MESSAGES_DEBUG` set to
+the `GNOME Shell` and `Gjs` domains. Not `all`: that turns on debug output for every library in the process, and dconf alone
+buries startup and teardown — the two moments worth reading — under a watch/unwatch line per settings path per extension.
+Warnings are not debug-level and print either way. `make ext-nested G_MESSAGES_DEBUG=all` when you need somebody else's library.
 The Shell inside that session — and therefore the extension inside it, and therefore any click in its menu — can only resolve
 the fake. **That is what makes this target safe for an agent to run**, and it is why the `PATH` prefix is not a convenience to
 be dropped when something does not work.
