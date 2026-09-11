@@ -20,7 +20,8 @@
 import GLib from 'gi://GLib';
 
 import {EMITTED} from '../src/lib/model.js';
-import {CODES, Reasons} from '../src/lib/reasons.js';
+import {CODES, LABELS, Reasons} from '../src/lib/reasons.js';
+import {MINIMUM} from '../src/lib/version.js';
 import {assertDeepEqual, assertEqual, describe, fail, it} from './harness.js';
 
 /**
@@ -221,6 +222,73 @@ describe('Reasons', () => {
                 if (text.includes(claim))
                     fail(`the ${grade} grade claims a source: ${text}`);
             }
+        }
+    });
+
+    it('names the minimum version in the too-old sentence', () => {
+        const reasons = new Reasons(message => message);
+
+        assertEqual(reasons.text('too-old').includes(MINIMUM), true, reasons.text('too-old'));
+    });
+});
+
+describe('Reasons labels', () => {
+    it('translates every label', () => {
+        const reasons = new Reasons(translate);
+
+        for (const code of LABELS) {
+            const text = reasons.label(code);
+
+            if (!text.startsWith('[') || !text.endsWith(']'))
+                fail(`${code} produced ${text}, which did not go through gettext`);
+
+            if (text === '[]')
+                fail(`${code} has an empty label`);
+        }
+    });
+
+    it('fills placeholders by name, in the order the translation puts them', () => {
+        const reasons = new Reasons(message =>
+            message === 'Sent {input} to {display} ({model}). Whether the monitor changed input is not independently confirmed.'
+                ? '{model} / {display} / {input}'
+                : message);
+
+        const text = reasons.label('sent-body', {input: 'DisplayPort', display: 'card1-DP-1', model: 'LG 38WR85QC-W'});
+        assertEqual(text, 'LG 38WR85QC-W / card1-DP-1 / DisplayPort');
+    });
+
+    it('inserts a value as it is, replacement patterns and braces included', () => {
+        const reasons = new Reasons(message => message);
+
+        assertEqual(reasons.label('monmux-version', {version: '$& $1 {version}'}), 'monmux $& $1 {version}');
+    });
+
+    it('leaves a placeholder with no value visible', () => {
+        const reasons = new Reasons(message => message);
+
+        assertEqual(reasons.label('monmux-version'), 'monmux {version}');
+    });
+
+    it('renders an unknown label as itself', () => {
+        const reasons = new Reasons(translate);
+
+        assertEqual(reasons.label('no-such-label'), 'no-such-label');
+    });
+
+    it('says the write status is unknown in exactly those words', () => {
+        const reasons = new Reasons(message => message);
+
+        assertEqual(reasons.label('write-status-unknown'), 'The write status is unknown.');
+    });
+
+    it('never says a sent command switched the monitor', () => {
+        const reasons = new Reasons(message => message);
+
+        for (const code of ['sent-title', 'sent-body']) {
+            const text = reasons.label(code, {input: 'dp', display: 'card1-DP-1', model: 'LG 38WR85QC-W'});
+
+            if (/switched/i.test(text))
+                fail(`${code} claims a switch happened: ${text}`);
         }
     });
 });

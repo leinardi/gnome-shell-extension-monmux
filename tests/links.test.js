@@ -20,11 +20,14 @@
 import GLib from 'gi://GLib';
 
 import {
+    EXTENSION_REPOSITORY,
     MONMUX_DOCS,
     addingAMonitor,
     extensionReadme,
     installMonmux,
+    reportProblem,
     troubleshooting,
+    troubleshootingGuide,
 } from '../src/lib/links.js';
 import {assertEqual, describe, fail, it} from './harness.js';
 
@@ -43,9 +46,11 @@ import {assertEqual, describe, fail, it} from './harness.js';
 function allLinks() {
     return [
         troubleshooting('input-not-enabled'),
+        troubleshootingGuide(),
         addingAMonitor(),
         installMonmux(),
         extensionReadme(),
+        reportProblem(),
     ];
 }
 
@@ -111,6 +116,23 @@ describe('links', () => {
 
     it("points this extension's own link at this extension", () => {
         assertEqual(extensionReadme().includes('gnome-shell-extension-monmux'), true);
+    });
+
+    it('puts every reason section on the troubleshooting page', () => {
+        assertEqual(troubleshooting('no-displays').split('#')[0], troubleshootingGuide());
+    });
+
+    it('keeps a reason with unexpected characters inside the fragment', () => {
+        // A reason from a newer monmux is passed through unchecked. Whatever it
+        // carries, it must not add a second fragment or a query to the URL.
+        const url = troubleshooting('a b#c?d/e');
+
+        assertEqual(url, `${troubleshootingGuide()}#a%20b%23c%3Fd%2Fe`);
+        assertHttpsUrl(url, 'encoded reason');
+    });
+
+    it('sends a problem report to this extension, not to monmux', () => {
+        assertEqual(reportProblem().startsWith(`${EXTENSION_REPOSITORY}/issues/`), true);
     });
 
     it('never produces a relative link', () => {

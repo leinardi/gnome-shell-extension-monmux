@@ -36,6 +36,7 @@
  */
 
 import {addingAMonitor, installMonmux, troubleshooting} from './links.js';
+import {MINIMUM} from './version.js';
 
 /**
  * @typedef {object} Reason
@@ -213,7 +214,8 @@ const MONMUX_STATES = {
         link: installMonmux(),
     },
     'too-old': {
-        text: _ => _('The installed monmux is too old for this extension.'),
+        // Translators: {minimum} is a version number, such as 0.6.0.
+        text: _ => fill(_('The installed monmux is too old for this extension, which needs version {minimum} or newer.'), {minimum: MINIMUM}),
         link: installMonmux(),
     },
     'unknown': {
@@ -260,6 +262,78 @@ const CALLS_TO_ACTION = {
         link: addingAMonitor(),
     },
 };
+
+/**
+ * The words the menu and the notifications are built from, apart from reasons.
+ *
+ * Not codes the model emits or monmux reports: these are the extension's own
+ * labels, titles and fixed sentences. They live here all the same, so that
+ * src/ui holds no sentence of its own and a translator finds every string a user
+ * reads in one file.
+ *
+ * Placeholders are named, so a translation can reorder them, and they are only
+ * ever filled with monmux's own strings, which stay untranslated.
+ *
+ * @type {{[code: string]: (gettext: (message: string) => string) => string}}
+ */
+const LABEL_ENTRIES = {
+    'reading-displays': _ => _('Reading displays…'),
+    'unnamed-display': _ => _('Unnamed display'),
+    'install-monmux': _ => _('How to install monmux'),
+    'troubleshooting': _ => _('Troubleshooting'),
+    'report-problem': _ => _('Report this'),
+    // Translators: {version} is the version monmux reported, such as v0.6.0.
+    'monmux-version': _ => _('monmux {version}'),
+    'dry-run': _ => _('Dry run'),
+    'preferences': _ => _('Preferences'),
+    // Translators: {name} and {detail} are monmux's own untranslated words for
+    // one of its checks, such as "ddcutil binary" and "not found on PATH".
+    'failing-check': _ => _('{name}: {detail}'),
+    // Translators: {state} is the sentence "Recorded, not write-enabled." and
+    // {grade} how strong the evidence is, such as "tested directly on this model".
+    'recorded-input': _ => _('{state} Evidence: {grade}.'),
+    // Translators: the name of the tool, used as the panel button's accessible
+    // name and as the title of the notification source.
+    'app-name': _ => _('monmux'),
+    'sent-title': _ => _('Input-switch command sent'),
+    // Translators: {input} is an input such as DisplayPort, {display} a connector
+    // such as card1-DP-1, and {model} a monitor model. Never say the monitor
+    // switched: monmux only knows that the command was sent.
+    'sent-body': _ => _('Sent {input} to {display} ({model}). Whether the monitor changed input is not independently confirmed.'),
+    'refused-title': _ => _('monmux refused'),
+    'nothing-written': _ => _('No DDC write was performed.'),
+    'failed-title': _ => _('monmux failed'),
+    // Translators: said of every run that did not end in a refusal and did not
+    // report success. Keep it exactly as definite: the status is not known.
+    'write-status-unknown': _ => _('The write status is unknown.'),
+    'protocol-title': _ => _('monmux gave an unexpected answer'),
+    'too-old-title': _ => _('monmux is too old'),
+};
+
+/**
+ * Every label code.
+ *
+ * Exported so a test can assert that each one is translated and non-empty.
+ */
+export const LABELS = Object.freeze(Object.keys(LABEL_ENTRIES));
+
+/**
+ * Put values into a translated template.
+ *
+ * A function replacement rather than a string one, so a `$&` in a value monmux
+ * reported is inserted as it is instead of being read as a replacement pattern;
+ * and one pass, so a value that happens to contain `{name}` is not filled in
+ * turn. A placeholder with no value stays visible rather than turning into
+ * nothing.
+ *
+ * @param {string} template The translated template.
+ * @param {{[name: string]: string}} values What fills its placeholders.
+ * @returns {string} The filled template.
+ */
+function fill(template, values) {
+    return template.replace(/\{(\w+)\}/g, (placeholder, name) =>
+        Object.hasOwn(values, name) ? values[name] : placeholder);
+}
 
 /**
  * Every code that has an entry, grouped as the model groups them.
@@ -338,5 +412,22 @@ export class Reasons {
      */
     text(code) {
         return this.describe(code).text;
+    }
+
+    /**
+     * One of the extension's own labels.
+     *
+     * @param {string} code A label code, from {@link LABELS}.
+     * @param {{[name: string]: string}} [values] What fills its placeholders:
+     *   monmux's own strings, inserted untranslated.
+     * @returns {string} The translated label, or the code itself when there is
+     *   no such label - visible in the menu, like an unknown reason, rather than
+     *   an exception thrown halfway through building it.
+     */
+    label(code, values = {}) {
+        if (!Object.hasOwn(LABEL_ENTRIES, code))
+            return code;
+
+        return fill(LABEL_ENTRIES[code](this._gettext), values);
     }
 }

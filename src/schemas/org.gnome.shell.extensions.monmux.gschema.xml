@@ -5,11 +5,16 @@
   Copyright (c) 2026 Roberto Leinardi
   SPDX-License-Identifier: GPL-2.0-or-later
 
-  No keys yet. The schema exists from the first commit because metadata.json
-  names it and the Shell resolves it at load time, and because a schema added
-  later is a schema every installed copy has to be migrated onto.
+  The schema has existed since the first commit, keyless, because metadata.json
+  names it and the Shell resolves it at load time. Keys are only ever added:
+  renaming or retyping one is a migration every installed copy has to go through.
 -->
 <schemalist gettext-domain="gnome-shell-extension-monmux">
   <schema id="org.gnome.shell.extensions.monmux" path="/org/gnome/shell/extensions/monmux/">
+    <key name="dry-run" type="b">
+      <default>false</default>
+      <summary>Dry run</summary>
+      <description>Ask monmux to show the command a switch would run instead of running it.</description>
+    </key>
   </schema>
 </schemalist>

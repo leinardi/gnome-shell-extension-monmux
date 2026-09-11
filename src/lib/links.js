@@ -43,11 +43,37 @@ export const EXTENSION_REPOSITORY = 'https://github.com/leinardi/gnome-shell-ext
  * name. So the reason monmux reports is the fragment, with nothing to translate
  * or spell differently.
  *
+ * Encoded all the same. The reason is whatever monmux reported, and a value from
+ * a newer monmux is passed through rather than checked against a list, so it
+ * has to stay a fragment of this one page whatever characters it carries.
+ *
  * @param {string} reason The refusal reason, e.g. `input-not-enabled`.
  * @returns {string} The absolute URL of that section.
  */
 export function troubleshooting(reason) {
-    return `${MONMUX_DOCS}docs/troubleshooting.md#${reason}`;
+    return `${troubleshootingGuide()}#${encodeURIComponent(reason)}`;
+}
+
+/**
+ * The troubleshooting page as a whole, for a problem that is not one refusal.
+ *
+ * @returns {string} The absolute URL of the page.
+ */
+export function troubleshootingGuide() {
+    return `${MONMUX_DOCS}docs/troubleshooting.md`;
+}
+
+/**
+ * Where to report an answer from monmux that this extension could not read.
+ *
+ * This extension's tracker rather than monmux's: the extension is what could
+ * not read the answer, and whoever triages the report can move it if monmux
+ * turns out to be the one at fault.
+ *
+ * @returns {string} The absolute URL of a new bug report.
+ */
+export function reportProblem() {
+    return `${EXTENSION_REPOSITORY}/issues/new?template=bug_report.md`;
 }
 
 /**

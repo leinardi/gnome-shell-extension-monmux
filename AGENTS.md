@@ -62,7 +62,7 @@ installed from source.
 ## Layout
 
 - `src/` — exactly what `gnome-extensions pack` bundles, and nothing else.
-    - `src/extension.js` — the Shell side. Thin: lifecycle, widgets, and calls into `src/lib`. No parsing, no policy.
+    - `src/extension.js` — the Shell side. Thin: lifecycle, and calls into `src/ui` and `src/lib`. No parsing, no policy.
     - `src/prefs.js` — the preferences window. A separate GJS process with GTK and no Shell: never import St, Clutter or
       anything under `resource:///org/gnome/shell/ui/`.
     - `src/lib/` — no `gi://St`, no `gi://Clutter`, no `resource:///`, no Shell import of any kind. This is what the test suite
@@ -74,6 +74,13 @@ installed from source.
         - `model.js` — what the menu shows, built from what `monmux` reported. Pure, and it emits codes, never sentences.
         - `reasons.js` — the only mapping from a code to text a user reads, translated through the `gettext` it is handed.
         - `links.js` — the only source of URLs. Nothing else builds one.
+    - `src/ui/` — the widgets, built from the model and from nothing else. Shell imports belong here and in `extension.js`
+      only. No sentence and no URL of its own: every word comes from `reasons.js`, every link from `links.js`. Nothing here
+      spawns, and nothing here is unit tested — widgets need a Shell, so they are checked in `make ext-nested`.
+        - `indicator.js` — the panel button and its menu. The indicator owns its `PanelMenu.Button` rather than subclassing
+          it, so the extension adds `indicator.button` to the panel and destroys it through `indicator.destroy()`.
+        - `notify.js` — the one notification source, and what each switch result says.
+        - `common.js` — opening a link, and cutting raw output to a length a menu line can hold.
     - `src/schemas/` — the GSettings schema. `make ext-schemas` compiles it; the compiled file is not committed.
 - `tests/` — the gjs suite, the harness, the fixtures, and `tests/bin/monmux`, the fake that is the only `monmux` any automated
   thing in this repository is allowed to see.

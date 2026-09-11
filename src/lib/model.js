@@ -341,10 +341,16 @@ function readReport(result) {
         return {doc, problem: null};
 
     if (result.kind === 'refused' && doc !== null)
-        return {doc, problem: problem(Code.REPORT_REFUSED, result)};
+        return {doc, problem: problemBesideReport(Code.REPORT_REFUSED, result)};
 
-    if (result.kind === 'failed')
-        return {doc, problem: problem(Code.REPORT_FAILED, result)};
+    if (result.kind === 'failed') {
+        return {
+            doc,
+            problem: doc === null
+                ? problem(Code.REPORT_FAILED, result)
+                : problemBesideReport(Code.REPORT_FAILED, result),
+        };
+    }
 
     // A protocol error, an unknown flag from a binary whose version said it
     // knows the flag, or a kind this module has never heard of.
@@ -374,6 +380,25 @@ function readCatalog(result) {
  */
 function problem(reasonCode, result) {
     return {reasonCode, detail: rawText(result)};
+}
+
+/**
+ * A problem that came with a usable report.
+ *
+ * Only stderr travels with it. stdout was the report, and the report is
+ * rendered - as displays and failing checks - rather than repeated as raw text:
+ * verbatim it would be the whole document, identities and handles included, cut
+ * off in the middle of the menu.
+ *
+ * @param {string} reasonCode What went wrong.
+ * @param {ClientResult} result The result it went wrong in, whose document was
+ *   read.
+ * @returns {Problem} The problem, carrying what monmux wrote to stderr.
+ */
+function problemBesideReport(reasonCode, result) {
+    const stderr = textOrNull(result.stderr);
+
+    return {reasonCode, detail: stderr === null ? null : stderr.trim()};
 }
 
 /**

@@ -71,6 +71,7 @@ ext-pack: ext-schemas ## Build dist/<uuid>.shell-extension.zip
 	@mkdir -p $(DIST_DIR)
 	@gnome-extensions pack $(EXT_SRC) \
 	  --extra-source=lib \
+	  --extra-source=ui \
 	  $(if $(wildcard $(PO_DIR)),--podir=../$(PO_DIR),) \
 	  --force \
 	  --out-dir=$(DIST_DIR)

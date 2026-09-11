@@ -501,6 +501,26 @@ describe('buildModel problems', () => {
         assertEqual(model.displays.length, 1, 'displays');
     });
 
+    it('carries only stderr next to a report, never the report again as raw text', async () => {
+        // The client already leaves stdout out of a refusal or a failure whose
+        // document decoded, and the model does not rely on that: a result that
+        // still carries it must not put the whole document - identities and
+        // handles included - into a menu line.
+        const report = fixture('info-checks-failing.json');
+        const version = await new Monmux(() => Promise.resolve(answering('version.json'))).version();
+        const catalog = await new Monmux(() => Promise.resolve(answering('catalog-list.json'))).catalogList();
+
+        for (const kind of ['refused', 'failed']) {
+            const model = buildModel({
+                version,
+                info: {kind, doc: JSON.parse(report), stdout: report, stderr: 'ddcutil was not found on PATH\n'},
+                catalog,
+            });
+
+            assertDeepEqual(model.problems.map(each => each.detail), ['ddcutil was not found on PATH'], kind);
+        }
+    });
+
     it('shows no display when the report is missing', async () => {
         const model = await modelOf(SCENARIOS['info failed without a report']);
 

@@ -18,8 +18,26 @@
  */
 
 /*
- * Deliberately empty. The panel menu uses the Shell's own styles; a rule here
- * would be one this extension has to keep matching across five Shell versions.
- * Phase 2 adds the greyed-out input styling if the stock :insensitive state
- * turns out not to carry it.
+ * As little as possible. The panel menu uses the Shell's own styles, and every
+ * rule here is one this extension has to keep matching across five Shell
+ * versions.
+ *
+ * Greyed items carry the monmux-greyed class, but the dimming itself is set on
+ * the actor, in src/ui/indicator.js: St's CSS has no opacity property in any
+ * Shell from 46 to 50, so an opacity rule here would be parsed and ignored. The
+ * class stays, as the hook a theme can style.
  */
+
+/* Reasons and raw output wrap at this width instead of widening the menu. */
+.monmux-text {
+    max-width: 28em;
+}
+
+/* The second line of an item: a display's model, an input's reason. */
+.monmux-subtitle {
+    font-size: smaller;
+}
+
+.monmux-footer-version {
+    font-size: smaller;
+}
