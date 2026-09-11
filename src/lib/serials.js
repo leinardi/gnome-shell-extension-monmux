@@ -19,19 +19,8 @@
 
 /*
  * The serial numbers a click can be pinned with, kept apart from everything the
- * menu renders.
- *
- * monmux redacts serials unless it is asked not to, and this extension asks only
- * after the user turned serial targeting on, and only when monmux would
- * otherwise refuse to pick between the attached displays. The answer to that
- * `info --show-serial` goes through here and nowhere else. What comes out is a
- * map from a display's label to its serial, which the extension keeps privately
- * and hands to `switch --serial` - never to the model, a widget, a notification
- * or the log.
- *
- * That is why a failure here carries no text. Every other failed run shows what
- * monmux wrote; this one's stdout and stderr are the unredacted report, so its
- * failure is a code with nothing next to it.
+ * menu renders: they go to `switch --serial` and nowhere else. A failure here
+ * carries no text, because what that run wrote is the unredacted report.
  */
 
 /** @typedef {import('./model.js').ClientResult} ClientResult */

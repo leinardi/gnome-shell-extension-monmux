@@ -53,27 +53,8 @@ const SERIAL_TARGETING_KEY = 'serial-targeting';
 /**
  * The extension entry point: the lifecycle, and when to read and when to write.
  *
- * What to show and what a result means are decided in src/lib and rendered in
- * src/ui. This file decides only when things run, and it holds three rules.
- *
- * Switches are serialised. While one runs, the inputs are insensitive and a
- * click on one, or a shortcut, is ignored, so no two monmux processes ever write
- * at once.
- *
- * Reads never overlap a write, because a write may be changing the very display
- * list a read reports. A refresh started while a switch runs waits for it; a
- * switch started while a refresh runs cancels that refresh and runs it again
- * once the switch is over. A refresh also cancels the refresh before it, whose
- * answer would be out of date by the time it arrived.
- *
- * Nothing late reaches anything. Every operation registers its cancellable,
- * which disable() cancels, and captures the generation when it starts; a
- * completion whose generation is no longer current is dropped before it touches
- * a widget or the notification source, whether it outlived a disable() or a
- * whole disable and enable.
- *
- * Serials, read only while the user has serial targeting on, live in one
- * private map and go nowhere but a switch's `--serial`.
+ * Switches are serialised, a read never overlaps a write, and a completion that
+ * outlived its generation is dropped. docs/architecture.md has the details.
  */
 export default class MonmuxExtension extends Extension {
     /**

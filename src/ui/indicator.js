@@ -18,24 +18,10 @@
  */
 
 /*
- * The panel button and its menu.
- *
- * A view, and only that. What each display and input is, and whether an input
- * may be clicked, was decided in model.js from what monmux reported; this file
- * turns that model into menu items and hands a click back to whoever built it.
- * It starts no process and holds no sentence and no URL of its own: every word
- * comes from reasons.js and every link from links.js, so a translation and a
- * review of what the menu can open each have one file to read.
- *
- * Nothing here knows about refreshes, cancellation or which switch is running.
- * The extension decides when to show the loading state, a model, or that a
- * switch is in flight; this file renders what it is told.
- *
- * The indicator owns a PanelMenu.Button rather than being one. A registered
- * GObject subclass takes its arguments through `_init`, which the type-checker
- * holds to PanelMenu.Button's own signature, and it types every field assigned
- * there as possibly undefined; a plain class with a constructor has neither
- * problem, and the button it owns is the same widget in the same panel.
+ * The panel button and its menu: a view of the model built in model.js, with
+ * every word from reasons.js and every link from links.js. It owns a
+ * PanelMenu.Button rather than subclassing one, which keeps the type-checker
+ * away from GObject's `_init`.
  */
 
 import Clutter from 'gi://Clutter';

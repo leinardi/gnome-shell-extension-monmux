@@ -18,23 +18,11 @@
  */
 
 /*
- * What a switch result tells the user.
- *
- * The result arrives classified. The client in monmux.js has already read the
- * exit code, checked the document's outcome and write status against it, and
- * turned any disagreement into a protocol error, so this file switches on the
- * result's kind and on nothing else. Branching on an exit code here would be a
- * second interpretation of it, and the one in exitCode.js is the only one.
- *
- * Each kind claims exactly what monmux claimed. A sent command is reported as
- * sent, never as a switch that happened, because nothing confirms that it did.
- * Only a refusal says that nothing was written. Everything else that ran - a
- * failure, an answer outside the contract, a binary that did not know the flag -
- * says that the write status is unknown, in those words.
- *
- * The GNOME Shell 46 notification API is the floor: a Source built with a title
- * and an icon name, a Notification built with its source, title and body, and
- * addAction(). All three are unchanged through 50.
+ * What a switch result tells the user. It switches on the kind the client
+ * already classified, never on an exit code, and claims no more than monmux
+ * did: a command is reported as sent, not as a switch, and only a refusal says
+ * that nothing was written. The Shell 46 notification API it uses is unchanged
+ * through 50.
  */
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';

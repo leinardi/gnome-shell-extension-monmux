@@ -18,21 +18,10 @@
  */
 
 /*
- * The one place a code becomes a sentence a user reads.
- *
- * The model emits codes and never prose, so that everything the menu says is
- * translated in one file and nothing invents a reason monmux did not give. This
- * is the other half of that arrangement: every code the model can emit has an
- * entry here, and a code with no entry renders as the code itself rather than
- * as nothing, so a value from a newer monmux is visible instead of hidden.
- *
- * gettext arrives as a constructor argument rather than as an import. The
- * Shell's `gettext` comes from `resource:///`, and importing that here would
- * make this module unloadable under plain gjs and untestable with it — the
- * whole reason logic lives in src/lib.
- *
- * The strings are written inside a `_(…)` call, not stored as bare literals and
- * translated later, because that call is what xgettext extracts.
+ * The one place a code becomes a sentence a user reads. A code with no entry
+ * renders as itself, so a value from a newer monmux stays visible. gettext is
+ * handed in rather than imported, which keeps this module loadable under plain
+ * gjs, and every string sits inside a `_(…)` call so that xgettext extracts it.
  */
 
 import {addingAMonitor, installMonmux, troubleshooting} from './links.js';

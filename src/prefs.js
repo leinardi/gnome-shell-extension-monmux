@@ -25,6 +25,7 @@ import Gtk from 'gi://Gtk?version=4.0';
 
 import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
+import {EXTENSION_REPOSITORY} from './lib/links.js';
 import {Monmux, ResultKind, locate, readOnly, spawn} from './lib/monmux.js';
 import {Reasons} from './lib/reasons.js';
 import {SLOTS, catalogInputNames, inputChoices} from './lib/shortcuts.js';
@@ -33,8 +34,6 @@ import {VersionState, checkVersion} from './lib/version.js';
 /** @typedef {import('./lib/monmux.js').Result} Result */
 /** @typedef {import('./lib/monmux.js').RunnerResult} RunnerResult */
 /** @typedef {import('./lib/shortcuts.js').Slot} Slot */
-
-const REPOSITORY_URL = 'https://github.com/leinardi/gnome-shell-extension-monmux';
 
 /** How much of what monmux wrote the version row shows, in characters. */
 const RAW_LIMIT = 600;
@@ -61,24 +60,8 @@ const RAW_LIMIT = 600;
  */
 
 /**
- * The preferences window.
- *
- * This runs in a separate GJS process from the Shell, with GTK available and
- * St and Clutter absent.
- *
- * Nothing in this window writes to a monitor. It sets keys, and the extension
- * decides what they mean; the monmux it runs is only ever asked to read, and a
- * switch - dry run included - cannot even be started from here, because its
- * runner refuses one before any process exists. The one way a switch could
- * still follow from something done here is a shortcut the Shell runs while the
- * user is pressing keys in this window, and the capture dialog takes those keys
- * away from the Shell for as long as it is open.
- *
- * Every run is tied to the window. One cancellable is created with it and
- * cancelled when it closes, every run is handed that cancellable, and every
- * completion checks it before touching a widget: closing the window while the
- * catalog or doctor is still being read updates nothing that no longer exists,
- * and says nothing about it.
+ * The preferences window, in its own GJS process. It writes to no monitor: its
+ * monmux can only read, and every run is cancelled when the window closes.
  */
 export default class MonmuxPreferences extends ExtensionPreferences {
     /**
@@ -123,10 +106,7 @@ export default class MonmuxPreferences extends ExtensionPreferences {
         window.add(this._diagnosticsPage(context));
         window.add(this._aboutPage());
 
-        // The Shell awaits this, and there is nothing asynchronous to wait for:
-        // the catalog and the version fill their rows in when they arrive.
-        // `async` with no `await` in it is an ESLint error (`require-await`),
-        // so the promise is returned explicitly instead.
+        // Not `async`: with nothing to await, ESLint's require-await rejects it.
         return Promise.resolve();
     }
 
@@ -560,14 +540,14 @@ export default class MonmuxPreferences extends ExtensionPreferences {
         });
 
         const link = new Gtk.LinkButton({
-            uri: REPOSITORY_URL,
+            uri: EXTENSION_REPOSITORY,
             label: _('Open'),
             valign: Gtk.Align.CENTER,
         });
 
         const row = new Adw.ActionRow({
             title: _('Project page'),
-            subtitle: REPOSITORY_URL,
+            subtitle: EXTENSION_REPOSITORY,
             activatable_widget: link,
         });
         row.add_suffix(link);

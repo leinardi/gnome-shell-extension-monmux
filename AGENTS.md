@@ -54,6 +54,7 @@ installed from source.
 | --- | --- |
 | [`README.md`](README.md) | What this is, how to install it, what it does. |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Prerequisites, the workflow, the rule above in prose. |
+| [`docs/architecture.md`](docs/architecture.md) | The model, the client, and the extension's lifecycle. |
 | [`docs/testing.md`](docs/testing.md) | How the no-write rule is enforced, and the human checklist. |
 | [`SECURITY.md`](SECURITY.md) | What the threat model is and how to report a vulnerability. |
 | [`.agents/skills/gjs-style-guide/SKILL.md`](.agents/skills/gjs-style-guide/SKILL.md) | The GJS rules this repository enforces. |

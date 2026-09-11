@@ -18,49 +18,16 @@
  */
 
 /*
- * Everything that talks to monmux, in the one file allowed to spawn it.
- *
- * Two halves. The client is pure: it builds argv arrays, calls a runner it was
- * given, and classifies what came back. The adapter is the runner the Shell
- * passes it, and it is the only code in this repository that starts a process.
- * They live together because AGENTS.md names this file as the single spawner
- * and nothing here is worth moving that boundary for.
- *
- * The split is what makes the classification testable. The suite drives the
- * client with a runner that records argv and answers from a fixture, so every
- * exit code and every malformed answer is exercised without a subprocess
- * existing; the adapter is verified in the nested Shell against the fake, where
- * the argv log proves the array arrived intact.
- *
- * Classification happens in a fixed order, and the order is the point: the exit
- * code first, because it is monmux's authority on what it is willing to
- * promise; then a stderr shape that means the flag was never understood; and
- * only then the document. Nothing here believes a document over the code that
- * came with it, and a disagreement between the two is reported as such rather
- * than resolved by choosing a side.
- *
- * Which command was run is passed in, never inferred from what came back.
- * Inferring it would mean a malformed answer decides how strictly it is judged,
- * which is exactly backwards: the command is what fixes the fields its document
- * must carry, and a document missing one of them is a protocol error whatever
- * else it happens to look like.
- *
- * Two invariants come out of that, and the phase 4 menu is written against
- * both. A `refused` result always carries a document with a reason. A `failed`
- * result always carries text: either a document with a non-empty `error`, or a
- * non-empty stderr. Where neither exists the answer is a protocol error, which
- * keeps the raw output instead of reporting a failure with nothing in it.
+ * Everything that talks to monmux, and the only file that starts a process: a
+ * pure client that builds argv arrays and classifies answers, and spawn(), the
+ * runner the Shell hands it. docs/architecture.md describes the classification
+ * order and what each kind of result is guaranteed to carry.
  */
 
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 
 import {Outcome, outcomeForExitCode} from './exitCode.js';
-
-// The one thing importing this module does. It is idempotent in GJS, it touches
-// nothing outside the Gio prototype, and it has to happen before the first call
-// rather than inside one.
-Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async');
 
 /** The name resolved from PATH. Never a path, and never a configurable one. */
 const PROGRAM = 'monmux';
@@ -583,10 +550,8 @@ export function readOnly(runner) {
 /**
  * Run monmux. This is the only function in the extension that starts a process.
  *
- * It rejects for one reason that is not a cancellation: output that is not
- * valid UTF-8, which `communicate_utf8_async` refuses to decode. Every caller
- * has to catch that, because it is monmux's own output arriving in a form this
- * function cannot hand on - not a failure monmux reported.
+ * It rejects when monmux cannot be started, or writes output that is not valid
+ * UTF-8. Every caller has to catch that: it is not a failure monmux reported.
  *
  * @param {string[]} argv The arguments, without the program name.
  * @param {?Gio.Cancellable} [cancellable] Cancels the run. On cancellation the
@@ -607,7 +572,7 @@ export async function spawn(argv, cancellable = null) {
         : 0;
 
     try {
-        const [stdout, stderr] = await proc.communicate_utf8_async(null, cancellable);
+        const [stdout, stderr] = await communicate(proc, cancellable);
 
         return {
             // A process killed by a signal has no exit status to read. NaN is
@@ -628,4 +593,28 @@ export async function spawn(argv, cancellable = null) {
         if (cancellable !== null && handler !== 0)
             cancellable.disconnect(handler);
     }
+}
+
+/**
+ * `communicate_utf8_async` as a promise.
+ *
+ * Wrapped here rather than with `Gio._promisify`, which patches
+ * Gio.Subprocess.prototype for every extension in the process and would have to
+ * run when this module is imported.
+ *
+ * @param {Gio.Subprocess} proc The process.
+ * @param {?Gio.Cancellable} cancellable Cancels the read.
+ * @returns {Promise<[?string, ?string]>} What it wrote to stdout and stderr.
+ */
+function communicate(proc, cancellable) {
+    return new Promise((resolve, reject) => {
+        proc.communicate_utf8_async(null, cancellable, (_proc, result) => {
+            try {
+                const [, stdout, stderr] = proc.communicate_utf8_finish(result);
+                resolve([stdout, stderr]);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    });
 }

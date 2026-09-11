@@ -733,6 +733,14 @@ describe('buildModel rules', () => {
         }
     });
 
+    it('calls an enabled input name that reads as a flag a protocol condition, and offers nothing', async () => {
+        const shown = onlyDisplay(await modelOf({info: reporting(display({enabledInputs: ['dp', '--dry-run']}))}));
+
+        assertEqual(shown.reasonCode, 'protocol', 'reason');
+        assertEqual(shown.inputs.some(input => input.name.startsWith('-')), false, 'listed');
+        assertEqual(shown.inputs.some(input => canOffer(shown, input)), false, 'offered');
+    });
+
     it('calls a match to a model the catalog lists no times, or twice, a protocol condition', async () => {
         const duplicated = catalogWith(doc => {
             doc.models.push(entryOf(doc, 'LG 38WR85QC-W'));

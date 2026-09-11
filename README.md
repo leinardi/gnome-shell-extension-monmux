@@ -2,67 +2,102 @@
 
 Switch a supported monitor between its video inputs from the GNOME top panel.
 
-The panel menu lists the attached displays and, under each one, the inputs that
-[`monmux`](https://github.com/leinardi/monmux) will actually write. Picking one switches the monitor. Inputs that `monmux`
-knows about but has no hardware evidence for are shown greyed out, with a link explaining how to test and report that model,
-so the menu says *why* something is unavailable instead of hiding it.
+<p>
+  <img src="docs/images/menu.png" alt="The panel menu: one LG 38WR85QC-W on card1-DP-1, with DisplayPort and USB-C to pick from, the monmux version, a Dry run switch and Preferences" width="250">
+  &nbsp;
+  <img src="docs/images/menu-greyed.png" alt="The panel menu for a monitor the catalog records but has not write-enabled: its four inputs greyed, each with the evidence behind it, and a Test and report this monitor item" width="441">
+</p>
 
-`monmux` is a separate command-line tool and it takes every decision: it identifies each attached monitor against a built-in
-catalog of models and refuses anything it cannot positively identify, or that the catalog does not explicitly enable for that
-model. This extension runs it, renders what it reports, and reports back what it said. It re-implements none of that policy,
-and it can enable nothing `monmux` refuses.
+The panel menu lists the attached displays and, under each one, the inputs that [`monmux`](https://github.com/leinardi/monmux)
+will actually write. Pick one and `monmux` switches the monitor. An input `monmux` knows about but has not enabled is shown
+greyed out, with the reason, so the menu says *why* something is unavailable instead of hiding it.
+
+`monmux` is a separate command-line tool, and it takes every decision. It identifies each attached monitor against a built-in
+catalog of models, and refuses anything it cannot positively identify or that the catalog does not explicitly enable for that
+model. This extension runs it, renders what it reports, and tells you what it answered. It can enable nothing `monmux` refuses.
+
+The screenshots come from a nested GNOME Shell running against this repository's fake `monmux`, so no real monitor's serial
+number can appear in them.
 
 ## Status
 
-**In development. Not yet on extensions.gnome.org.** The panel menu is built and needs `monmux` 0.6.0 or newer. It has been
-exercised in a nested GNOME Shell against a fake `monmux`, and not yet against a real monitor: that is the checklist in
-[`docs/testing.md`](docs/testing.md).
+**In development.** It works in a nested GNOME Shell against a fake `monmux`, and has not yet been run against a real monitor:
+that is the checklist in [docs/testing.md](docs/testing.md). There is no release yet, and it is not on extensions.gnome.org —
+both come later. Until then, it is installed from source.
 
-Shipped:
+The Italian translation is a first draft awaiting review.
 
-- one section per attached display, with its inputs as menu items
-- greyed-out inputs for models the catalog records but has not write-enabled, with a "test and report this monitor" link
-- a notification per switch: sent, refused with the reason and a troubleshooting link, or "the write status is unknown"
-- the installed `monmux` version in the menu, and a prompt with an install link when `monmux` is missing or too old
-- a refresh on menu open and on monitor hotplug
-- a dry-run switch in the menu, which has `monmux` print the command instead of running it
-- [serial targeting](#serial-targeting) for more than one supported monitor, off by default and not hardware-verified
-- four [keyboard shortcut](#keyboard-shortcuts) slots, each switching to one input
-- a preferences window with the shortcuts and serial targeting, and a Diagnostics page that runs `monmux doctor` and shows the
-  installed version and where it was found
-- an Italian translation, a first draft awaiting review
+## Requirements
 
-Planned:
+- GNOME Shell 46, 47, 48, 49 or 50
+- [`monmux`](https://github.com/leinardi/monmux) 0.6.0 or newer, or a local `make go-build` of it, installed and working from
+  a terminal: start with `monmux doctor`
+- a monitor `monmux` supports. It supports few, on purpose: an input is write-enabled only after somebody with that monitor
+  in front of them switched it and wrote down what happened.
 
-- publication on extensions.gnome.org
+## Install from source
 
-There is no "current input" marker anywhere, and there will not be one: `monmux` never asks a monitor which input it is on, so
-the extension has nothing truthful to show.
+Building needs `git`, `make`, Node.js with `npm`, and `gettext`, which compiles the translations into the zip:
+`sudo apt install gettext` on Debian or Ubuntu, `sudo dnf install gettext` on Fedora.
 
-## Serial targeting
+```sh
+git clone https://github.com/leinardi/gnome-shell-extension-monmux.git
+cd gnome-shell-extension-monmux
+make ext-deps          # npm ci
+make ext-pack          # dist/monmux@leinardi.github.io.shell-extension.zip
+make ext-install
+```
 
-With two or more supported monitors attached, `monmux` will not pick one on its own, so a click ends in a
-`multiple-candidates` refusal. Turn on **Serial targeting** in the extension's preferences, and the menu reads the monitors'
-serial numbers with `monmux info --show-serial`, so that a click is pinned to the monitor it was made under with
-`monmux switch … --serial`.
+GNOME Shell only picks up a new extension after a restart: on Wayland, log out and back in; on X11, press <kbd>Alt</kbd> +
+<kbd>F2</kbd> and type `r`. Then:
 
-- It is off by default, and while it is off `--show-serial` is never passed.
-- The serials are kept in memory to pin a click. They are never shown in the menu, in a notification or in the log.
-- A monitor with no readable serial is left unpinned. Without a `serial:` pin in `monmux`'s configuration file, `monmux` then
-  refuses that click as it would without the setting; with one, the click goes to the pinned monitor, which may not be the one
-  it was made under.
-- `--serial` wins over that `serial:` pin. A pinned click targets the monitor it was made under, whatever the file says; an
-  unpinned click — one supported monitor, a monitor with no readable serial, or the setting off — leaves the file's pin in
-  force.
+```sh
+gnome-extensions enable monmux@leinardi.github.io
+```
 
-**Not hardware-verified.** It has only been exercised against the fake `monmux`, and it stays marked that way until somebody
-with two supported monitors has tried it.
+To remove it: `gnome-extensions uninstall monmux@leinardi.github.io`.
 
-## Keyboard shortcuts
+## Using it
 
-There are four slots, each a shortcut and the input it switches to. Set them on the **Shortcuts** page of the extension's
-preferences: the dropdown lists every input name in `monmux`'s catalog, and the shortcut button asks for a key combination with
-Ctrl, Alt or Super in it. The same keys can be set with `gsettings`, pointing it at the schema the extension installed:
+### The menu
+
+The menu reads the displays each time it opens, and again about a second after a monitor is plugged in or unplugged. Each
+display is a section: its connector, such as `card1-DP-1`, its model, and its inputs. Click an input to switch to it. While a
+switch runs, the inputs cannot be clicked.
+
+There is no "current input" marker, and there will not be one: `monmux` never asks a monitor which input it is on, so the
+extension has nothing truthful to show.
+
+Below the displays:
+
+- **monmux vX.Y.Z** — the version that answered.
+- **Dry run** — while it is on, a click or a shortcut has `monmux` print the command it would run, and nothing is sent to the
+  monitor.
+- **Preferences** — the shortcuts, serial targeting, and diagnostics.
+
+### Notifications
+
+Every switch ends in one notification, and it says exactly what `monmux` said:
+
+| Title | What it means |
+| --- | --- |
+| Input-switch command sent | `monmux` sent the command. Nothing reads the input back, so the notification does not claim the monitor changed. |
+| Dry run | The command `monmux` would have run. Nothing was sent. |
+| monmux refused | `monmux` declined, for the reason shown. "No DDC write was performed." **Troubleshooting** opens the section for that reason. |
+| monmux failed | `monmux` ran and failed, or could not be run, or wrote something that could not be read. "The write status is unknown." Look at the monitor. |
+| monmux gave an unexpected answer | An answer outside `monmux`'s documented format. The write status is unknown. **Report this** opens an issue here. |
+| monmux is too old | The `monmux` on `PATH` was replaced by one older than 0.6.0. The write status is unknown. |
+
+Only a refusal says that nothing was written.
+
+### Keyboard shortcuts
+
+There are four slots, each a shortcut and the input it switches to. Set them on the **Shortcuts** page of the preferences:
+the dropdown lists every input name in `monmux`'s catalog, and the shortcut button asks for a key combination with Ctrl, Alt or
+Super in it. If GNOME asks whether the window may capture shortcuts, allow it: otherwise pressing a combination that is
+already set runs that shortcut instead of capturing it.
+
+The same keys can be set with `gsettings`, pointing it at the schema the extension installed:
 
 ```sh
 SCHEMAS=~/.local/share/gnome-shell/extensions/monmux@leinardi.github.io/schemas
@@ -79,38 +114,82 @@ gsettings --schemadir "$SCHEMAS" set org.gnome.shell.extensions.monmux shortcut-
 - A slot with a shortcut and no input, or with a value that is not an input name, starts nothing and says so.
 - Shortcuts work on the desktop, not in the overview or on the lock screen.
 
-## Requirements
+### Serial targeting
 
-- GNOME Shell 46, 47, 48, 49 or 50
-- [`monmux`](https://github.com/leinardi/monmux), installed and working from a terminal — start with `monmux doctor`
-- a monitor `monmux` supports. It supports few, deliberately: an input is write-enabled only after somebody with that monitor
-  in front of them switched it and wrote down what happened.
+With two or more supported monitors attached, `monmux` will not pick one on its own, so a click ends in a
+`multiple-candidates` refusal. Turn on **Serial targeting** on the **Shortcuts** page of the preferences, and the menu reads
+the monitors' serial numbers with `monmux info --show-serial`, so that a click is pinned to the monitor it was made under with
+`monmux switch … --serial`.
 
-## Install from source
+- It is off by default, and while it is off `--show-serial` is never passed.
+- The serials are kept in memory to pin a click. They are never shown in the menu, in a notification or in the log.
+- A monitor with no readable serial is left unpinned. Without a `serial:` pin in `monmux`'s configuration file, `monmux` then
+  refuses that click as it would without the setting; with one, the click goes to the pinned monitor, which may not be the one
+  it was made under.
+- `--serial` wins over that `serial:` pin. A pinned click targets the monitor it was made under, whatever the file says; an
+  unpinned click — one supported monitor, a monitor with no readable serial, or the setting off — leaves the file's pin in
+  force.
 
-Building needs `gettext`, which compiles the translations into the zip: `sudo apt install gettext` on Debian or Ubuntu,
-`sudo dnf install gettext` on Fedora.
+**Not hardware-verified.** It has only been exercised against the fake `monmux`, and it stays marked that way until somebody
+with two supported monitors has tried it.
 
-```sh
-git clone https://github.com/leinardi/gnome-shell-extension-monmux.git
-cd gnome-shell-extension-monmux
-make ext-deps          # npm ci
-make ext-pack          # dist/monmux@leinardi.github.io.shell-extension.zip
-make ext-install
-```
+### Diagnostics
 
-GNOME Shell only picks up a new extension after a restart: on Wayland log out and back in, on X11 press <kbd>Alt</kbd> +
-<kbd>F2</kbd> and type `r`. Then:
+The **Diagnostics** page of the preferences shows where `monmux` was found on `PATH` and the version it reports, and runs
+`monmux doctor` on request, with a button to copy what it printed into a report. It only reads: the preferences window
+cannot start a switch.
 
-```sh
-gnome-extensions enable monmux@leinardi.github.io
-```
+## Why something is greyed out
 
-## Reporting a monitor
+The menu shows what `monmux` reported, and the words below are what it says. Where a line is `monmux`'s own — a check's name
+and detail, or what it printed — it is shown as `monmux` wrote it, untranslated.
 
-The supported-monitor catalog lives in `monmux`, not here. If your monitor is not listed, or one of its inputs is greyed out,
-the procedure is [docs/adding-a-monitor.md](https://github.com/leinardi/monmux/blob/main/docs/adding-a-monitor.md) in that
-repository.
+### An input
+
+| The menu says | What it means | What to do |
+| --- | --- | --- |
+| Recorded, not write-enabled. Evidence: … | The catalog records this input for the model, but `monmux` has not enabled it, so it will not write it. The evidence says how strong the record is: *tested directly on this model*, *from the manufacturer's documentation*, *reported working for this input*, or *quoted in a report, inputs not tried one by one*. | **Test and report this monitor** opens [adding a monitor](https://github.com/leinardi/monmux/blob/main/docs/adding-a-monitor.md). |
+| monmux gave an answer that does not follow its documented format. | `monmux` enabled an input its catalog does not record, or recorded one without a label or an evidence grade. Nothing about it is guessed. | [Report it](https://github.com/leinardi/gnome-shell-extension-monmux/issues). |
+
+### A display
+
+A greyed display offers none of its inputs.
+
+| The menu says | What it means | What to do |
+| --- | --- | --- |
+| Not in the monmux catalog. | The display can be reached and written to, but no catalog entry matches it. | **Test and report this monitor** opens [adding a monitor](https://github.com/leinardi/monmux/blob/main/docs/adding-a-monitor.md). |
+| More than one catalog entry claims this monitor. | The catalog matches it more than once, and `monmux` does not guess between them. | [Troubleshooting](https://github.com/leinardi/monmux/blob/main/docs/troubleshooting.md#ambiguous-catalog). |
+| This display cannot be written to. | The backend reports that it cannot write to this display. | [Troubleshooting](https://github.com/leinardi/monmux/blob/main/docs/troubleshooting.md#display-not-writable), and `monmux doctor`. |
+| This display exposes no DDC channel. | The backend found no DDC channel to talk to the display over. | `monmux doctor`, and the [troubleshooting guide](https://github.com/leinardi/monmux/blob/main/docs/troubleshooting.md). |
+| This display's EDID could not be read. | The display's identity could not be read, so it cannot be matched against the catalog. | `monmux doctor`, and the [troubleshooting guide](https://github.com/leinardi/monmux/blob/main/docs/troubleshooting.md). |
+| This display has no UUID to address it by. | The backend reported no identifier to address the display by. | `monmux doctor`, and the [troubleshooting guide](https://github.com/leinardi/monmux/blob/main/docs/troubleshooting.md). |
+| monmux gave an answer that does not follow its documented format. | Two of `monmux`'s answers disagree about this display — inputs enabled on a display it would not write to, or a model its catalog lists no times or twice — or the entry is missing a field. | [Report it](https://github.com/leinardi/gnome-shell-extension-monmux/issues). |
+| a code, such as `some-new-status` | A value from a newer `monmux` than this extension knows. | Update the extension. |
+
+### The whole menu
+
+| The menu says | What it means | What to do |
+| --- | --- | --- |
+| monmux is not installed. | There is no `monmux` on `PATH`. | **How to install monmux** opens [its install section](https://github.com/leinardi/monmux/blob/main/README.md#install). |
+| The installed monmux is too old for this extension, which needs version 0.6.0 or newer. | The `monmux` on `PATH` predates the JSON contract this extension reads. | **How to install monmux**. |
+| The installed monmux could not be identified. | It answered `version --json`, but not with a version this extension could read. What it printed is shown under it. | Run `monmux version` in a terminal. |
+| monmux refused while reading the displays. | `info` declined — usually a failing check, listed below it — and still reported the displays. | The failing checks, and **Troubleshooting**. |
+| monmux failed while reading the displays. | `info` failed. What it printed is shown under it. | `monmux doctor`. |
+| monmux failed while reading its catalog. | `catalog list` failed. The displays cannot be labelled. | `monmux catalog list` in a terminal. |
+| *name*: *detail*, then **Troubleshooting** | One of `monmux`'s checks did not pass, in its own words. | **Troubleshooting** opens the [troubleshooting guide](https://github.com/leinardi/monmux/blob/main/docs/troubleshooting.md). |
+| The serial numbers could not be read, so a click cannot be pinned to one display. | Serial targeting is on, and reading the serials failed. Clicks go unpinned, and `monmux` decides. | `monmux info --show-serial` in a terminal. |
+| No display was detected. | `monmux` answered cleanly and reported no display. | `monmux doctor`. |
+| monmux could not be run, or what it wrote could not be read. | The process did not start, or its output was not valid text. | Run `monmux version` in a terminal. |
+
+## Links
+
+- [`monmux`](https://github.com/leinardi/monmux), and [how to install it](https://github.com/leinardi/monmux/blob/main/README.md#install)
+- [Troubleshooting](https://github.com/leinardi/monmux/blob/main/docs/troubleshooting.md), with a section per refusal reason
+- [Adding a monitor](https://github.com/leinardi/monmux/blob/main/docs/adding-a-monitor.md): the supported-monitor catalog lives
+  in `monmux`, and this is how a model gets into it
+- [Issues](https://github.com/leinardi/gnome-shell-extension-monmux/issues) for this extension
+- [docs/architecture.md](docs/architecture.md): the model, the client and the lifecycle
+- [docs/testing.md](docs/testing.md): how nothing automated reaches a monitor, and the human checklist
 
 ## Contributing
 

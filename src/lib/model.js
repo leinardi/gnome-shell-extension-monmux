@@ -18,32 +18,11 @@
  */
 
 /*
- * What the menu shows, decided from what monmux reported and from nothing else.
- *
- * The model carries codes, never sentences. Every code becomes text in
- * reasons.js, so a translated menu has no untranslated sentence hiding in here,
- * and nothing in this file can word a reason more strongly than monmux gave it.
- * The only human strings that pass through are monmux's own, verbatim: the
- * label its catalog records for each input, the display and model names, a
- * failing check, and the raw output of a run that produced no usable document.
- * None of them is translated, because each is what monmux itself prints.
- *
- * Nothing here is policy. Which inputs are enabled comes from `enabledInputs`
- * and from nowhere else. The catalog's `writeEnabled` is never read: whether a
- * display may be written to is monmux's decision, and it has already taken it by
- * the time `info` answers. The catalog is joined only to label what `info`
- * named, and to show - greyed - what the entry records beyond that.
- *
- * A greyed input says what the fields say and stops there: that the input is
- * recorded and not enabled, and the grade of the evidence behind it. The JSON
- * carries no reason an input is disabled, so no such reason is emitted. If
- * monmux starts exposing one, that is a change to its docs/json.md first and to
- * this file second.
- *
- * Where two of monmux's answers disagree - an input enabled that the catalog
- * entry does not record, a display matched to a model the catalog does not
- * list - the model says `protocol` rather than filling the gap. Nothing with a
- * protocol code is ever offered as something to click.
+ * What the menu shows, built from what monmux reported and from nothing else.
+ * It emits codes, never sentences, and takes no decision of its own: which
+ * inputs are enabled comes from `enabledInputs` alone, and where two of
+ * monmux's answers disagree the code is `protocol`. docs/architecture.md
+ * describes the model.
  */
 
 import {VersionState, checkVersion} from './version.js';
@@ -523,7 +502,9 @@ function joinCatalog(display, models) {
     /** @type {string[]} */
     const enabled = [];
     for (const name of display.enabledInputs) {
-        if (isNonEmptyString(name) && !enabled.includes(name))
+        // A name starting with `-` would reach monmux as a flag, and the client
+        // refuses to build that command line, so it is not offered either.
+        if (isNonEmptyString(name) && !name.startsWith('-') && !enabled.includes(name))
             enabled.push(name);
         else
             malformed = true;
