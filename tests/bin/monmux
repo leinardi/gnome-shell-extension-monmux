@@ -116,17 +116,12 @@ fake_info() {
     exit 70
   fi
 
-  if has_flag --show-serial "$@"; then
-    echo "fake monmux: 'info --json --show-serial' is not faked yet" >&2
-    exit 70
-  fi
-
   local variant="${MONMUX_FAKE_INFO:-writable}"
   local code=0
   local diagnostic=""
 
   case "${variant}" in
-    writable | unknown-monitor | not-write-enabled | edid-unreadable | two-identical) ;;
+    writable | unknown-monitor | not-write-enabled | edid-unreadable | two-identical | two-supported) ;;
     checks-failing)
       code=2
       # shellcheck disable=SC2016  # $PATH is literal here: it is inside the text
@@ -140,7 +135,19 @@ fake_info() {
       ;;
   esac
 
-  fixture "info-${variant}.json"
+  # --show-serial answers from the variant's -serials fixture, whose serials are
+  # synthetic. A variant without one is not faked, and says so, rather than
+  # answering a request for serials with a redacted report.
+  local name="info-${variant}.json"
+  if has_flag --show-serial "$@"; then
+    name="info-${variant}-serials.json"
+    if [[ ! -f "${FIXTURES}/${name}" ]]; then
+      echo "fake monmux: 'info --json --show-serial' is not faked for ${variant}" >&2
+      exit 70
+    fi
+  fi
+
+  fixture "${name}"
 
   if [[ -n "${diagnostic}" ]]; then
     printf '%s\n' "${diagnostic}" >&2

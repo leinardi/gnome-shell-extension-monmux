@@ -252,6 +252,9 @@ const SCENARIOS = {
     'info-not-write-enabled': {info: answering('info-not-write-enabled.json')},
     'info-edid-unreadable': {info: answering('info-edid-unreadable.json')},
     'info-two-identical': {info: answering('info-two-identical.json')},
+    'info-two-supported': {info: answering('info-two-supported.json')},
+    'info-two-identical-serials': {info: answering('info-two-identical-serials.json')},
+    'info-two-supported-serials': {info: answering('info-two-supported-serials.json')},
     'info-checks-failing': {info: answering('info-checks-failing.json')},
     'not installed': {version: null},
     'too old for --json': {version: answer(1, '', 'Error: unknown flag: --json\n')},
@@ -343,6 +346,7 @@ describe('buildModel over the fixtures', () => {
                 ],
                 reasonCode: null,
                 cta: null,
+                needsSerial: false,
             }],
         });
     });
@@ -359,6 +363,7 @@ describe('buildModel over the fixtures', () => {
             inputs: [],
             reasonCode: 'none',
             cta: 'adding-a-monitor',
+            needsSerial: false,
         });
     });
 
@@ -379,6 +384,7 @@ describe('buildModel over the fixtures', () => {
             ],
             reasonCode: null,
             cta: 'adding-a-monitor',
+            needsSerial: false,
         });
     });
 
@@ -394,6 +400,7 @@ describe('buildModel over the fixtures', () => {
             inputs: [],
             reasonCode: 'edid-unreadable',
             cta: null,
+            needsSerial: false,
         });
         assertDeepEqual(model.checks, [{name: 'card1-HDMI-A-1', detail: 'edid-unreadable'}]);
     });
@@ -780,9 +787,56 @@ describe('buildModel rules', () => {
             inputs: [input],
             reasonCode: 'protocol',
             cta: null,
+            needsSerial: false,
         };
 
         assertEqual(canOffer(shown, input), false);
+    });
+});
+
+describe('buildModel serial needs', () => {
+    it('marks both of two identical writable displays', async () => {
+        const model = await modelOf(SCENARIOS['info-two-identical']);
+
+        assertDeepEqual(model.displays.map(each => each.needsSerial), [true, true]);
+    });
+
+    it('marks two writable displays of different models too, not only identical ones', async () => {
+        const model = await modelOf(SCENARIOS['info-two-supported']);
+
+        assertDeepEqual(model.displays.map(each => each.model), ['LG 38WR85QC-W', 'Dell U3421WE'], 'models');
+        assertDeepEqual(model.displays.map(each => each.needsSerial), [true, true], 'needsSerial');
+    });
+
+    it('marks nothing when one display is writable and matched', async () => {
+        const model = await modelOf(SCENARIOS['info-writable']);
+
+        assertDeepEqual(model.displays.map(each => each.needsSerial), [false]);
+    });
+
+    it('counts only writable displays that match the catalog exactly', async () => {
+        const model = await modelOf({
+            info: reporting(
+                display({label: 'card1-DP-1'}),
+                display({label: 'card1-DP-2', match: 'none', model: '', enabledInputs: []}),
+                display({label: 'card1-DP-3', status: 'no-ddc-channel', writable: false, enabledInputs: []})),
+        });
+
+        assertDeepEqual(model.displays.map(each => each.needsSerial), [false, false, false]);
+    });
+
+    it('carries no serial into the model, even from a report that has them', async () => {
+        for (const name of ['info-two-identical-serials.json', 'info-two-supported-serials.json']) {
+            const serials = document(name).displays
+                .map(/** @param {any} each */ each => each.identity.serialString)
+                .filter(/** @param {string} each */ each => each !== '');
+            assertEqual(serials.length, 2, `${name} serials`);
+
+            // eslint-disable-next-line no-await-in-loop
+            const rendered = JSON.stringify(await modelOf({info: answering(name)}));
+            for (const serial of serials)
+                assertEqual(rendered.includes(serial), false, `${name} ${serial}`);
+        }
     });
 });
 

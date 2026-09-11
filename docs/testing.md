@@ -20,7 +20,7 @@ because the Shell inherits it:
 
 | Variable | Values | Effect |
 | --- | --- | --- |
-| `MONMUX_FAKE_INFO` | a variant name, default `writable` | `info --json` answers from `info-<variant>.json`, with that variant's own exit code |
+| `MONMUX_FAKE_INFO` | a variant name, default `writable` | `info --json` answers from `info-<variant>.json`, with that variant's own exit code; `info --json --show-serial` from `info-<variant>-serials.json`, where the variant has one |
 | `MONMUX_FAKE_VERSION` | `v0.6.0` (default) or `v0.5.0` | which monmux this pretends to be |
 | `MONMUX_FAKE_SWITCH` | a fixture name, default `refused-input-not-enabled` | `switch --json` answers from `switch-<name>.json` |
 | `MONMUX_FAKE_LOG` | a file path, unset by default | every argv the fake received, one shell-quoted line per run |
@@ -49,8 +49,8 @@ and exiting **2**, not 1. `cli.info` wraps the preflight refusal in a `readOnlyE
 a refusal, which is the code a refusal gets. Every other variant exits 0 with nothing on stderr. A variant the script does not
 know exits 70 rather than reaching for a fixture that may not exist.
 
-`catalog list --json` answers from the captured catalog. Anything else — `catalog show`, `doctor`, `info --show-serial`, a
-`switch` without `--json` — exits 70 with a message saying it is not faked. Failing loudly beats answering with something
+`catalog list --json` answers from the captured catalog. Anything else — `catalog show`, `doctor`, `info --show-serial` for a
+variant with no `-serials` fixture, a `switch` without `--json` — exits 70 with a message saying it is not faked. Failing loudly beats answering with something
 invented: a fake that decides differently from the real tool turns a green suite into a lie.
 
 ### The fixtures
@@ -80,8 +80,13 @@ with a "test and report this monitor" call to action. Today's monmux cannot prod
 identities, and matching is on identities alone, so a non-write-enabled model always comes back as `match: none`. The contract
 permits it, a later catalog entry can create it, and the extension has to render it correctly before then.
 
-Fixtures carry synthetic serials and nothing else, and today they carry none at all: every one of them is redacted, which is
-what `monmux` prints unless `--show-serial` is passed. A real serial must never be committed.
+`info-two-supported.json` is constructed the same way: two writable displays of two different models, both matched exactly,
+which is the case monmux's `multiple-candidates` rule is about. Only the LG entry is write-enabled in today's catalog, so the
+Dell half cannot come from a real binary yet; the menu has to handle it all the same.
+
+Fixtures carry synthetic serials and nothing else. Only the two `info-*-serials.json` fixtures carry any — `SYNTHLG0001`,
+`SYNTHLG0002` and `SYNTHDELL0002`, which no monitor has — and they stand for `info --json --show-serial`. Every other fixture is
+redacted, which is what `monmux` prints unless `--show-serial` is passed. A real serial must never be committed.
 
 ## How the suite refuses to touch hardware
 

@@ -1,0 +1,82 @@
+{
+  "backend": "ddcutil",
+  "displays": [
+    {
+      "label": "card1-DP-1",
+      "handle": "card1-DP-1",
+      "handlePrivate": false,
+      "writable": true,
+      "status": "ok",
+      "identity": {
+        "manufacturer": "GSM",
+        "productCode": 30675,
+        "serialNumber": 1001,
+        "serialString": "SYNTHLG0001",
+        "modelName": "LG ULTRAWIDE"
+      },
+      "match": "exact",
+      "model": "LG 38WR85QC-W",
+      "enabledInputs": [
+        "dp",
+        "usb-c"
+      ]
+    },
+    {
+      "label": "card1-DP-2",
+      "handle": "card1-DP-2",
+      "handlePrivate": false,
+      "writable": true,
+      "status": "ok",
+      "identity": {
+        "manufacturer": "DEL",
+        "productCode": 41442,
+        "serialNumber": 2002,
+        "serialString": "SYNTHDELL0002",
+        "modelName": "DELL U3421WE"
+      },
+      "match": "exact",
+      "model": "Dell U3421WE",
+      "enabledInputs": [
+        "dp",
+        "usb-c"
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "name": "ddcutil binary",
+      "ok": true,
+      "detail": "/usr/bin/ddcutil"
+    },
+    {
+      "name": "ddcutil sha256",
+      "ok": true,
+      "detail": "2e8fdb082a0b44bd1f8c0b1f03a0e88ec8b4def9a7f097703f435f5aaf03f3de"
+    },
+    {
+      "name": "ddcutil version",
+      "ok": true,
+      "detail": "at least 2.2"
+    },
+    {
+      "name": "ddcutil options",
+      "ok": true,
+      "detail": "--edid, --i2c-source-addr, --noverify"
+    },
+    {
+      "name": "displays",
+      "ok": true,
+      "detail": "2 connected displays"
+    },
+    {
+      "name": "card1-DP-1",
+      "ok": true,
+      "detail": "ok"
+    },
+    {
+      "name": "card1-DP-2",
+      "ok": true,
+      "detail": "ok"
+    }
+  ]
+}

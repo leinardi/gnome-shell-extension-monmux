@@ -190,6 +190,8 @@ export const EMITTED = Object.freeze({
  * @property {InputModel[]} inputs What the menu lists under it.
  * @property {?string} reasonCode Why the display itself is greyed, or null.
  * @property {?string} cta The call to action to show with it, or null.
+ * @property {boolean} needsSerial Whether monmux refuses a click on it as
+ *   ambiguous unless the click is pinned to a serial.
  */
 
 /**
@@ -254,7 +256,7 @@ export function buildModel({version, info, catalog}) {
     const models = entries.models;
     const displays = report.doc === null || models === null
         ? []
-        : report.doc.displays.map(/** @param {any} display */ display => describeDisplay(display, models));
+        : markSerialNeeds(report.doc.displays.map(/** @param {any} display */ display => describeDisplay(display, models)));
 
     return {
         monmux: MonmuxState.OK,
@@ -589,14 +591,46 @@ function describeInput(name, state, record) {
 }
 
 /**
+ * Mark the displays monmux would refuse to pick between.
+ *
+ * monmux's policy refuses `multiple-candidates` whenever two or more writable
+ * displays match the catalog exactly, whatever their models - so the count is
+ * over every such display, not over displays that share a model. The mark
+ * decides nothing: an input under a marked display is offered as before, and a
+ * click on it that is not pinned gets monmux's own refusal.
+ *
+ * @param {DisplayModel[]} displays Every display, modelled.
+ * @returns {DisplayModel[]} The same displays, marked.
+ */
+function markSerialNeeds(displays) {
+    const candidate = (/** @type {DisplayModel} */ display) => display.writable && display.match === MATCH_EXACT;
+    const ambiguous = displays.filter(candidate).length >= 2;
+
+    // Every field written out rather than spread, in the order DisplayModel
+    // documents: what reaches the menu is this list and nothing else.
+    return displays.map(display => ({
+        label: display.label,
+        model: display.model,
+        status: display.status,
+        match: display.match,
+        writable: display.writable,
+        inputs: display.inputs,
+        reasonCode: display.reasonCode,
+        cta: display.cta,
+        needsSerial: ambiguous && candidate(display),
+    }));
+}
+
+/**
  * The fields of a display the menu shows, and no others.
  *
  * Deliberately not the identity, and not the handle: the model is rendered and
  * may one day be logged by mistake, and neither belongs anywhere it can reach.
+ * Whether a display needs a serial is decided over all of them, afterwards.
  *
  * @param {any} display The report's entry, well formed or not.
- * @returns {{label: ?string, model: ?string, status: ?string, match: ?string, writable: boolean}}
- *   The fields.
+ * @returns {{label: ?string, model: ?string, status: ?string, match: ?string, writable: boolean,
+ *   needsSerial: boolean}} The fields.
  */
 function displayFields(display) {
     const entry = isObject(display) ? display : {};
@@ -607,6 +641,7 @@ function displayFields(display) {
         status: textOrNull(entry.status),
         match: textOrNull(entry.match),
         writable: entry.writable === true,
+        needsSerial: false,
     };
 }
 

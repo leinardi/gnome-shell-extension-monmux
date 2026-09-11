@@ -74,6 +74,8 @@ installed from source.
         - `model.js` — what the menu shows, built from what `monmux` reported. Pure, and it emits codes, never sentences.
         - `reasons.js` — the only mapping from a code to text a user reads, translated through the `gettext` it is handed.
         - `links.js` — the only source of URLs. Nothing else builds one.
+        - `serials.js` — the serials a click is pinned with, read from `info --show-serial` only while the user opted in,
+          and kept out of the model. Nothing it reads is rendered or logged, a failure included.
     - `src/ui/` — the widgets, built from the model and from nothing else. Shell imports belong here and in `extension.js`
       only. No sentence and no URL of its own: every word comes from `reasons.js`, every link from `links.js`. Nothing here
       spawns, and nothing here is unit tested — widgets need a Shell, so they are checked in `make ext-nested`.

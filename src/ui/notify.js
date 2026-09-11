@@ -44,6 +44,13 @@ import {installMonmux, reportProblem, troubleshooting} from '../lib/links.js';
 import {ResultKind} from '../lib/monmux.js';
 import {excerpt, openLink} from './common.js';
 
+/**
+ * The refusal a click gets when several supported monitors are attached and it
+ * was not pinned to one. While serial targeting is off, its notification names
+ * the preference that pins it.
+ */
+const MULTIPLE_CANDIDATES = 'multiple-candidates';
+
 /** @typedef {import('../lib/monmux.js').Result} Result */
 /** @typedef {import('../lib/reasons.js').Reasons} Reasons */
 
@@ -70,9 +77,12 @@ import {excerpt, openLink} from './common.js';
 export class Notifier {
     /**
      * @param {Reasons} reasons Turns codes into the words a notification says.
+     * @param {() => boolean} serialTargeting Whether the user has serial
+     *   targeting on, asked each time a refusal is posted.
      */
-    constructor(reasons) {
+    constructor(reasons, serialTargeting) {
         this._reasons = reasons;
+        this._serialTargeting = serialTargeting;
 
         /** @type {?MessageTray.Source} */
         this._source = null;
@@ -208,6 +218,12 @@ export class Notifier {
                 body: lines(
                     reasons.text(reason),
                     detail === null ? null : excerpt(detail),
+                    // Only while the preference is off: with it on, the click
+                    // went unpinned because no serial was read for its display,
+                    // and turning the preference on again would change nothing.
+                    reason === MULTIPLE_CANDIDATES && !this._serialTargeting()
+                        ? reasons.label('serial-targeting-hint')
+                        : null,
                     reasons.label('nothing-written')),
                 actions: [{label: reasons.label('troubleshooting'), link: troubleshooting(reason)}],
             };

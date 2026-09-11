@@ -26,6 +26,7 @@ Shipped:
 - the installed `monmux` version in the menu, and a prompt with an install link when `monmux` is missing or too old
 - a refresh on menu open and on monitor hotplug
 - a dry-run switch in the menu, which has `monmux` print the command instead of running it
+- [serial targeting](#serial-targeting) for more than one supported monitor, off by default and not hardware-verified
 
 Planned:
 
@@ -34,6 +35,25 @@ Planned:
 
 There is no "current input" marker anywhere, and there will not be one: `monmux` never asks a monitor which input it is on, so
 the extension has nothing truthful to show.
+
+## Serial targeting
+
+With two or more supported monitors attached, `monmux` will not pick one on its own, so a click ends in a
+`multiple-candidates` refusal. Turn on **Serial targeting** in the extension's preferences, and the menu reads the monitors'
+serial numbers with `monmux info --show-serial`, so that a click is pinned to the monitor it was made under with
+`monmux switch … --serial`.
+
+- It is off by default, and while it is off `--show-serial` is never passed.
+- The serials are kept in memory to pin a click. They are never shown in the menu, in a notification or in the log.
+- A monitor with no readable serial is left unpinned. Without a `serial:` pin in `monmux`'s configuration file, `monmux` then
+  refuses that click as it would without the setting; with one, the click goes to the pinned monitor, which may not be the one
+  it was made under.
+- `--serial` wins over that `serial:` pin. A pinned click targets the monitor it was made under, whatever the file says; an
+  unpinned click — one supported monitor, a monitor with no readable serial, or the setting off — leaves the file's pin in
+  force.
+
+**Not hardware-verified.** It has only been exercised against the fake `monmux`, and it stays marked that way until somebody
+with two supported monitors has tried it.
 
 ## Requirements
 

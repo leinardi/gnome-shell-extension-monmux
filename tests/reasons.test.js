@@ -63,7 +63,7 @@ const EXPECTED = Object.freeze({
     grade: Object.freeze(['verified', 'documented', 'reported', 'quoted']),
     // `ok` is deliberately absent: the menu shows the displays, not a sentence.
     monmux: Object.freeze(['missing', 'too-old', 'unknown']),
-    report: Object.freeze(['report-refused', 'report-failed', 'catalog-failed', 'protocol']),
+    report: Object.freeze(['report-refused', 'report-failed', 'catalog-failed', 'protocol', 'serials-unreadable']),
     cta: Object.freeze(['adding-a-monitor']),
 });
 

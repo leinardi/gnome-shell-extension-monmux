@@ -18,6 +18,7 @@
  */
 
 import Adw from 'gi://Adw';
+import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk?version=4.0';
 
 import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
@@ -28,8 +29,11 @@ const REPOSITORY_URL = 'https://github.com/leinardi/gnome-shell-extension-monmux
  * The preferences window.
  *
  * This runs in a separate GJS process from the Shell, with GTK available and
- * St and Clutter absent. Phase 2 adds the Diagnostics page (`monmux doctor`)
- * and the per-display keyboard shortcuts here.
+ * St and Clutter absent. Later phases add the Diagnostics page (`monmux doctor`)
+ * and the keyboard shortcuts here.
+ *
+ * Nothing in this window runs monmux or writes to a monitor. It sets keys, and
+ * the extension decides what they mean.
  */
 export default class MonmuxPreferences extends ExtensionPreferences {
     /**
@@ -37,6 +41,50 @@ export default class MonmuxPreferences extends ExtensionPreferences {
      * @returns {Promise<void>} Resolved once the pages are added.
      */
     fillPreferencesWindow(window) {
+        window.add(this._generalPage());
+        window.add(this._aboutPage());
+
+        // The Shell awaits this, and there is nothing asynchronous to do here.
+        // `async` with no `await` in it is an ESLint error (`require-await`),
+        // so the promise is returned explicitly instead.
+        return Promise.resolve();
+    }
+
+    /**
+     * @returns {Adw.PreferencesPage} The page with the extension's settings.
+     */
+    _generalPage() {
+        const page = new Adw.PreferencesPage({
+            title: _('General'),
+            icon_name: 'preferences-system-symbolic',
+        });
+
+        const group = new Adw.PreferencesGroup({
+            title: _('Monitors'),
+        });
+
+        // Adw.SwitchRow is libadwaita 1.4, which GNOME 45 shipped, so every
+        // supported Shell has it.
+        const serialTargeting = new Adw.SwitchRow({
+            title: _('Serial targeting'),
+            subtitle: _('When more than one supported monitor is attached, read their serial numbers so that a click can target one. Serials are read from monmux and are never shown or logged.'),
+        });
+
+        // Off by default, and this row only sets the key: serials are read by
+        // the extension, and only while the key is on (invariant 5).
+        this.getSettings().bind('serial-targeting', serialTargeting, 'active',
+            Gio.SettingsBindFlags.DEFAULT);
+
+        group.add(serialTargeting);
+        page.add(group);
+
+        return page;
+    }
+
+    /**
+     * @returns {Adw.PreferencesPage} The page about the extension.
+     */
+    _aboutPage() {
         const page = new Adw.PreferencesPage({
             title: _('About'),
             icon_name: 'help-about-symbolic',
@@ -62,11 +110,7 @@ export default class MonmuxPreferences extends ExtensionPreferences {
 
         group.add(row);
         page.add(group);
-        window.add(page);
 
-        // The Shell awaits this, and there is nothing asynchronous to do here.
-        // `async` with no `await` in it is an ESLint error (`require-await`),
-        // so the promise is returned explicitly instead.
-        return Promise.resolve();
+        return page;
     }
 }

@@ -35,6 +35,7 @@ await import('./links.test.js');
 await import('./model.test.js');
 await import('./monmux.test.js');
 await import('./reasons.test.js');
+await import('./serials.test.js');
 await import('./version.test.js');
 
 // Importing a test file only registers its tests; an asynchronous one is still

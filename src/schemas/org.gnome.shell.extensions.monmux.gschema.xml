@@ -16,5 +16,10 @@
       <summary>Dry run</summary>
       <description>Ask monmux to show the command a switch would run instead of running it.</description>
     </key>
+    <key name="serial-targeting" type="b">
+      <default>false</default>
+      <summary>Serial targeting</summary>
+      <description>When more than one supported monitor is attached, read their serial numbers so that a click can target one. Off by default: while it is off, serial numbers are never read.</description>
+    </key>
   </schema>
 </schemalist>

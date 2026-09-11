@@ -26,12 +26,14 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {buildModel, needsReports} from './lib/model.js';
 import {Monmux, locate, spawn} from './lib/monmux.js';
 import {Reasons} from './lib/reasons.js';
+import {noSerials, readSerials, serialFor, unreadable} from './lib/serials.js';
 import {MonmuxIndicator} from './ui/indicator.js';
 import {Notifier} from './ui/notify.js';
 
 /** @typedef {import('./lib/model.js').DisplayModel} DisplayModel */
 /** @typedef {import('./lib/model.js').InputModel} InputModel */
 /** @typedef {import('./lib/model.js').Model} Model */
+/** @typedef {import('./lib/serials.js').Serials} Serials */
 
 /**
  * How long monitor changes have to stop arriving before the displays are read
@@ -41,6 +43,9 @@ const HOTPLUG_SETTLE_MS = 1000;
 
 /** The settings key a switch reads to decide whether to execute anything. */
 const DRY_RUN_KEY = 'dry-run';
+
+/** The settings key the user turns on to have clicks pinned to a serial. */
+const SERIAL_TARGETING_KEY = 'serial-targeting';
 
 /**
  * The extension entry point: the lifecycle, and when to read and when to write.
@@ -62,6 +67,9 @@ const DRY_RUN_KEY = 'dry-run';
  * completion whose generation is no longer current is dropped before it touches
  * a widget or the notification source, whether it outlived a disable() or a
  * whole disable and enable.
+ *
+ * Serials, read only while the user has serial targeting on, live in one
+ * private map and go nowhere but a switch's `--serial`.
  */
 export default class MonmuxExtension extends Extension {
     /**
@@ -114,9 +122,18 @@ export default class MonmuxExtension extends Extension {
          */
         this._switchDone = null;
 
+        /**
+         * The serials of the displays the menu shows, by label. Never rendered,
+         * never logged, and never read unless serial targeting is on.
+         *
+         * @type {?Map<string, string>}
+         */
+        this._serials = null;
+
         this._refreshTimeoutId = 0;
         this._monitorsChangedId = 0;
         this._menuOpenId = 0;
+        this._serialTargetingChangedId = 0;
     }
 
     enable() {
@@ -133,8 +150,9 @@ export default class MonmuxExtension extends Extension {
 
         this._settings = settings;
         this._monmux = new Monmux(spawn);
-        this._notifier = new Notifier(reasons);
+        this._notifier = new Notifier(reasons, () => settings.get_boolean(SERIAL_TARGETING_KEY));
         this._cancellables = new Set();
+        this._serials = new Map();
         this._indicator = indicator;
 
         Main.panel.addToStatusArea(this.uuid, indicator.button);
@@ -148,6 +166,17 @@ export default class MonmuxExtension extends Extension {
 
         this._monitorsChangedId = Main.layoutManager.connect('monitors-changed',
             () => this._scheduleRefresh());
+
+        // Turning targeting on reads the serials straight away, so that they are
+        // there for the first click after it: that click usually lands during
+        // the refresh its menu-open starts, and is pinned with what was read
+        // before. Turning it off forgets them straight away too.
+        this._serialTargetingChangedId = settings.connect(`changed::${SERIAL_TARGETING_KEY}`, () => {
+            if (!settings.get_boolean(SERIAL_TARGETING_KEY))
+                this._serials?.clear();
+
+            this._refresh();
+        });
     }
 
     disable() {
@@ -160,6 +189,9 @@ export default class MonmuxExtension extends Extension {
         this._cancellables = null;
         this._refreshCancellable = null;
         this._switchDone = null;
+
+        this._serials?.clear();
+        this._serials = null;
 
         if (this._refreshTimeoutId !== 0) {
             GLib.Source.remove(this._refreshTimeoutId);
@@ -174,6 +206,11 @@ export default class MonmuxExtension extends Extension {
         if (this._menuOpenId !== 0) {
             this._indicator?.menu.disconnect(this._menuOpenId);
             this._menuOpenId = 0;
+        }
+
+        if (this._serialTargetingChangedId !== 0) {
+            this._settings?.disconnect(this._serialTargetingChangedId);
+            this._serialTargetingChangedId = 0;
         }
 
         this._indicator?.destroy();
@@ -238,10 +275,23 @@ export default class MonmuxExtension extends Extension {
             if (model === null || !this._isCurrent(generation, cancellable))
                 return;
 
-            this._indicator?.showModel(model);
+            const serials = await this._readSerials(model, cancellable);
+            if (serials === null || !this._isCurrent(generation, cancellable))
+                return;
+
+            // Replaced here, together with the model they belong to, and not
+            // when the refresh starts: the usual click lands while the refresh
+            // its menu-open started is still reading, on inputs of the model
+            // still shown, and it is pinned with that model's serials.
+            this._serials = serials.byLabel;
+            this._indicator?.showModel(serials.problem === null
+                ? model
+                : {...model, problems: [...model.problems, serials.problem]});
         } catch (error) {
-            if (this._isCurrent(generation, cancellable))
+            if (this._isCurrent(generation, cancellable)) {
+                this._serials = new Map();
                 this._indicator?.showError(String(error));
+            }
         } finally {
             cancellables.delete(cancellable);
 
@@ -287,14 +337,45 @@ export default class MonmuxExtension extends Extension {
     }
 
     /**
+     * Read the serials a click can be pinned with, when the user has asked for
+     * that and monmux would otherwise refuse to pick between the displays.
+     *
+     * @param {Model} model The model just read, from a redacted report.
+     * @param {Gio.Cancellable} cancellable Cancels the run.
+     * @returns {Promise<?Serials>} The serials, none when none were asked for,
+     *   or null when the run was cancelled.
+     */
+    async _readSerials(model, cancellable) {
+        const monmux = this._monmux;
+        const settings = this._settings;
+
+        // Off by default, and while it is off `--show-serial` is never passed.
+        if (monmux === null || settings === null || !settings.get_boolean(SERIAL_TARGETING_KEY))
+            return noSerials();
+
+        if (!model.displays.some(display => display.needsSerial))
+            return noSerials();
+
+        let result;
+        try {
+            result = await monmux.info({showSerial: true}, cancellable);
+        } catch {
+            // Not left to _refresh, which shows what went wrong: nothing about
+            // this run is shown except that it failed.
+            return unreadable();
+        }
+
+        return result === null ? null : readSerials(result, model.displays);
+    }
+
+    /**
      * Ask monmux to switch an input, and tell the user what it answered.
      *
-     * @param {DisplayModel} _display The display the input was listed under.
-     *   Unused until a click can be pinned to one display.
+     * @param {DisplayModel} display The display the input was listed under.
      * @param {InputModel} input The input that was clicked.
      * @returns {Promise<void>}
      */
-    async _switch(_display, input) {
+    async _switch(display, input) {
         const cancellables = this._cancellables;
         const monmux = this._monmux;
         const notifier = this._notifier;
@@ -329,8 +410,12 @@ export default class MonmuxExtension extends Extension {
 
             this._indicator?.setSwitching(true);
 
+            // Pinned only while serial targeting is on and monmux would refuse
+            // to pick without it; otherwise, and whenever there is no serial
+            // for this display, the click goes unpinned and monmux decides.
+            const serial = serialFor(display, this._serials, settings.get_boolean(SERIAL_TARGETING_KEY));
             const dryRun = settings.get_boolean(DRY_RUN_KEY);
-            const result = await monmux.switchInput(input.name, {dryRun}, cancellable);
+            const result = await monmux.switchInput(input.name, {dryRun, serial}, cancellable);
 
             if (result !== null && generation === this._generation)
                 notifier.notify(result);
