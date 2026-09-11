@@ -34,6 +34,7 @@ await import('./exitCode.test.js');
 await import('./links.test.js');
 await import('./model.test.js');
 await import('./monmux.test.js');
+await import('./prefs.test.js');
 await import('./reasons.test.js');
 await import('./serials.test.js');
 await import('./shortcuts.test.js');

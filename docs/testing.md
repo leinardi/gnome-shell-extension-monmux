@@ -49,8 +49,9 @@ and exiting **2**, not 1. `cli.info` wraps the preflight refusal in a `readOnlyE
 a refusal, which is the code a refusal gets. Every other variant exits 0 with nothing on stderr. A variant the script does not
 know exits 70 rather than reaching for a fixture that may not exist.
 
-`catalog list --json` answers from the captured catalog. Anything else — `catalog show`, `doctor`, `info --show-serial` for a
-variant with no `-serials` fixture, a `switch` without `--json` — exits 70 with a message saying it is not faked. Failing loudly beats answering with something
+`catalog list --json` answers from the captured catalog, and `doctor` from the captured `doctor.txt`, as prose and with exit 0.
+Anything else — `catalog show`, `doctor --show-serial`, `info --show-serial` for a variant with no `-serials` fixture, a
+`switch` without `--json` — exits 70 with a message saying it is not faked. Failing loudly beats answering with something
 invented: a fake that decides differently from the real tool turns a green suite into a lie.
 
 ### The fixtures
@@ -60,6 +61,7 @@ Two kinds, and the difference matters when one of them disagrees with the real b
 | Fixture | Origin |
 | --- | --- |
 | `catalog-list.json` | captured from `monmux catalog list --json` |
+| `doctor.txt` | captured from `monmux doctor` (v0.6.0) on the machine with the LG 38WR85QC-W; it prints no serial |
 | `version.json`, `version-v0.6.0.txt` | captured from the installed monmux v0.6.0, commit `029694f`, built 2026-09-10, with `monmux version` and `monmux version --json` |
 | `version-v0.5.0.txt` | captured the same way from the release before it |
 | `info-writable.json` | captured from `monmux info --json` on the LG 38WR85QC-W |
@@ -155,8 +157,11 @@ Run this before a release, and whenever a change touches the switch path. Nothin
 | 7 | Click an input the catalog does not enable, if the menu offers one | a refusal notification naming the reason, ending in that nothing was written; the monitor does not change |
 | 8 | `gnome-extensions disable monmux@leinardi.github.io` while a switch is in flight | the indicator disappears; `make ext-logs` shows no warning and no message after the disable |
 | 9 | Unplug and replug a monitor with the menu open | the menu updates; no duplicate section, no stale entry |
-| 10 | Set a [shortcut slot](../README.md#keyboard-shortcuts) to an input the catalog enables, turn **Dry run** on, press it | the notification shows the command; nothing on the monitor changes |
+| 10 | In **Preferences → Shortcuts**, give a [slot](../README.md#keyboard-shortcuts) a shortcut and an input the catalog enables, turn **Dry run** on, press the shortcut | if GNOME asks whether the window may capture shortcuts, allow it; the notification shows the command; nothing on the monitor changes |
+| 10a | With the preferences still open, set that slot's shortcut again and press the same combination in the dialog | the dialog captures it and closes; no notification, and nothing on the monitor changes |
 | 11 | Turn **Dry run** off and press the same shortcut | the monitor switches, and the notification is the one a click on that input gets |
+| 12 | **Preferences → Diagnostics → Run monmux doctor**, then **Copy** and paste it somewhere | the same lines `monmux doctor` prints in a terminal, and the version and location match `monmux version` and `command -v monmux`; nothing on the monitor changes |
+| 13 | Close the preferences window straight after pressing **Run monmux doctor** | the window closes; `make ext-logs` shows no warning about a widget |
 
 Record what happened in the pull request. If a step changed a monitor's input, say which monitor and which input — that is the
 evidence, and for a new model it belongs in a monitor report in the [monmux](https://github.com/leinardi/monmux) repository.

@@ -313,7 +313,7 @@ const LABEL_ENTRIES = {
     'protocol-title': _ => _('monmux gave an unexpected answer'),
     'too-old-title': _ => _('monmux is too old'),
     'run-failed': _ => _('monmux could not be run, or what it wrote could not be read.'),
-    // Translators: "Serial targeting" is the name of the switch on the General
+    // Translators: "Serial targeting" is the name of the switch on the Shortcuts
     // page of the extension's preferences.
     'serial-targeting-hint': _ => _('To pick one of them from the menu, turn on Serial targeting in the preferences.'),
     // Translators: {slot} is the number of a keyboard shortcut slot, such as 1.

@@ -97,3 +97,64 @@ export function slotTarget(value) {
 
     return {kind: SlotTargetKind.INPUT, input: value};
 }
+
+/**
+ * The input names the catalog records, for a person to pick a slot's input
+ * from.
+ *
+ * Every name any model records, enabled or not, once each and sorted. Which of
+ * them the attached monitor accepts is monmux's decision at the press, and not
+ * something the preferences window could know. A name that is not an input
+ * name by the rule above is left out.
+ *
+ * @param {?import('./monmux.js').Result} result The result of
+ *   `catalog list --json`, or null when there is none.
+ * @returns {string[]} The names, or none when the catalog was not read.
+ */
+export function catalogInputNames(result) {
+    const models = result?.kind === 'ok' && Array.isArray(result.doc?.models) ? result.doc.models : [];
+
+    /** @type {Set<string>} */
+    const names = new Set();
+    for (const model of models) {
+        if (!isObject(model) || !Array.isArray(model.inputs))
+            continue;
+
+        for (const input of model.inputs) {
+            if (isObject(input) && typeof input.name === 'string' &&
+                slotTarget(input.name).kind === SlotTargetKind.INPUT)
+                names.add(input.name);
+        }
+    }
+
+    return [...names].sort();
+}
+
+/**
+ * What a slot's dropdown offers.
+ *
+ * No input first, then the catalog's names, then the slot's current value when
+ * the catalog does not have it - a value set with `gsettings`, or an input a
+ * newer catalog dropped - so that opening the window never changes a slot on
+ * its own.
+ *
+ * @param {string[]} names The catalog's input names.
+ * @param {string} current What the slot's input key holds.
+ * @returns {string[]} The values to offer, the empty string standing for no
+ *   input.
+ */
+export function inputChoices(names, current) {
+    const choices = ['', ...names.filter(name => name !== '')];
+    if (!choices.includes(current))
+        choices.push(current);
+
+    return choices;
+}
+
+/**
+ * @param {unknown} value Anything.
+ * @returns {value is {[field: string]: any}} Whether it is a plain object.
+ */
+function isObject(value) {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}

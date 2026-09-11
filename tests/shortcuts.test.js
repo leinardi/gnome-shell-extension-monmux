@@ -21,18 +21,25 @@ import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 
 import {Monmux} from '../src/lib/monmux.js';
-import {SLOTS, SlotTargetKind, slotTarget} from '../src/lib/shortcuts.js';
+import {SLOTS, SlotTargetKind, catalogInputNames, inputChoices, slotTarget} from '../src/lib/shortcuts.js';
 import {assertDeepEqual, assertEqual, assertThrows, describe, it} from './harness.js';
 
-const SCHEMA = GLib.build_filenamev([
-    Gio.File.new_for_uri(import.meta.url).get_parent()?.get_parent()?.get_path() ?? '..',
-    'src',
-    'schemas',
-    'org.gnome.shell.extensions.monmux.gschema.xml',
-]);
+const ROOT = Gio.File.new_for_uri(import.meta.url).get_parent()?.get_parent()?.get_path() ?? '..';
+
+const SCHEMA = GLib.build_filenamev([ROOT, 'src', 'schemas', 'org.gnome.shell.extensions.monmux.gschema.xml']);
 
 /** Values cobra would parse as a flag rather than as the input to switch to. */
 const FLAG_LIKE = Object.freeze(['-', '-h', '--dry-run', '--unsafe-model', '--serial=SYNTHLG0001']);
+
+/**
+ * @param {string} path An absolute path.
+ * @returns {string} The file's contents.
+ */
+function read(path) {
+    const [, bytes] = Gio.File.new_for_path(path).load_contents(null);
+
+    return new TextDecoder().decode(bytes);
+}
 
 /**
  * The schema's keys, with the type and default each declares.
@@ -40,12 +47,9 @@ const FLAG_LIKE = Object.freeze(['-', '-h', '--dry-run', '--unsafe-model', '--se
  * @returns {Map<string, {type: string, value: string}>} Each key by name.
  */
 function schemaKeys() {
-    const [, bytes] = Gio.File.new_for_path(SCHEMA).load_contents(null);
-    const text = new TextDecoder().decode(bytes);
-
     /** @type {Map<string, {type: string, value: string}>} */
     const keys = new Map();
-    for (const match of text.matchAll(/<key name="([^"]+)" type="([^"]+)">\s*<default>([^<]*)<\/default>/g))
+    for (const match of read(SCHEMA).matchAll(/<key name="([^"]+)" type="([^"]+)">\s*<default>([^<]*)<\/default>/g))
         keys.set(match[1], {type: match[2], value: match[3]});
 
     return keys;
@@ -135,5 +139,42 @@ describe('shortcut slots', () => {
 
     it('passes a stored value on exactly as it was stored', () => {
         assertEqual(slotTarget(' dp ').input, ' dp ');
+    });
+});
+
+describe('catalogInputNames', () => {
+    it('offers every input name the catalog records, once each and sorted', async () => {
+        const catalog = read(GLib.build_filenamev([ROOT, 'tests', 'fixtures', 'catalog-list.json']));
+        const result = await new Monmux(() => Promise.resolve({exitCode: 0, stdout: catalog, stderr: ''})).catalogList();
+
+        assertDeepEqual(catalogInputNames(result),
+            ['dp', 'dp1', 'dp2', 'dvi', 'hdmi', 'hdmi1', 'hdmi2', 'thunderbolt', 'usb-c', 'vga']);
+    });
+
+    it('offers nothing from a catalog that was not read', () => {
+        assertDeepEqual(catalogInputNames(null), [], 'none');
+        assertDeepEqual(catalogInputNames({kind: 'failed', exitCode: 1, stderr: 'boom'}), [], 'failed');
+        assertDeepEqual(catalogInputNames({kind: 'protocol', exitCode: 0, stdout: '{}', stderr: ''}), [], 'protocol');
+    });
+
+    it('skips an entry that is not an input name', () => {
+        const doc = {
+            models: [
+                null,
+                {inputs: 'dp'},
+                {inputs: [null, {name: 5}, {name: '--unsafe-model'}, {name: ''}, {name: 'hdmi'}, {name: 'dp'}, {name: 'hdmi'}]},
+            ],
+        };
+
+        assertDeepEqual(catalogInputNames({kind: 'ok', doc}), ['dp', 'hdmi']);
+    });
+});
+
+describe('inputChoices', () => {
+    it('offers no input first, then the catalog, then a current value the catalog does not have', () => {
+        assertDeepEqual(inputChoices(['dp', 'usb-c'], ''), ['', 'dp', 'usb-c'], 'empty');
+        assertDeepEqual(inputChoices(['dp', 'usb-c'], 'usb-c'), ['', 'dp', 'usb-c'], 'in the catalog');
+        assertDeepEqual(inputChoices(['dp', 'usb-c'], 'hdmi9'), ['', 'dp', 'usb-c', 'hdmi9'], 'not in the catalog');
+        assertDeepEqual(inputChoices([], 'dp'), ['', 'dp'], 'catalog not read');
     });
 });

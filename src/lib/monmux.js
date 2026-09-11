@@ -239,6 +239,32 @@ export class Monmux {
     }
 
     /**
+     * Ask monmux to check its backend tool and every attached display, for a
+     * person to read.
+     *
+     * The one command run without `--json`. What doctor prints is prose meant
+     * to be read and pasted into a report, so it is handed back as monmux
+     * wrote it rather than classified: there is no document to check, and no
+     * decision anybody takes on it. doctor only reads, and it is never asked
+     * for the serials it redacts.
+     *
+     * @param {?Gio.Cancellable} [cancellable] Cancels the run.
+     * @returns {Promise<?RunnerResult>} What monmux wrote and its exit status,
+     *   or null when cancelled.
+     */
+    async doctor(cancellable = null) {
+        const answer = await this._runner(['doctor'], cancellable);
+        if (answer === null || answer === undefined)
+            return null;
+
+        return {
+            exitCode: answer.exitCode,
+            stdout: answer.stdout ?? '',
+            stderr: answer.stderr ?? '',
+        };
+    }
+
+    /**
      * Ask monmux to switch an input.
      *
      * @param {string} input The input's name, as monmux spells it.
@@ -519,6 +545,39 @@ function isNonEmptyString(value) {
  */
 export function locate() {
     return GLib.find_program_in_path(PROGRAM);
+}
+
+/** The commands monmux documents as read-only, and the only ones {@link readOnly} starts. */
+const READ_ONLY_COMMANDS = Object.freeze(['version', 'info', 'catalog', 'doctor']);
+
+/**
+ * Wrap a runner so that it only ever starts a command that reads, and never
+ * one that prints what monmux redacts.
+ *
+ * The preferences window runs monmux for what it shows - the version, the
+ * catalog, doctor - and it must never switch an input: a switch is a write,
+ * and a window that sets keys has no business making one. This makes that a
+ * property of the runner rather than a habit of its callers. It lists what may
+ * run rather than what may not, so a command monmux adds later is refused until
+ * somebody has decided that it only reads. `--show-serial` is refused with it,
+ * in either of the spellings cobra accepts, because whatever the window reads
+ * it also shows.
+ *
+ * @param {Runner} runner The runner to wrap: {@link spawn}, in the preferences
+ *   window.
+ * @returns {Runner} A runner that rejects every other command line without
+ *   starting anything.
+ */
+export function readOnly(runner) {
+    return (argv, cancellable) => {
+        const showsSerials = argv.some(argument =>
+            argument === '--show-serial' || argument.startsWith('--show-serial='));
+
+        if (!READ_ONLY_COMMANDS.includes(argv[0]) || showsSerials)
+            return Promise.reject(new Error(`not a read-only monmux command: ${argv[0] ?? '(none)'}`));
+
+        return runner(argv, cancellable);
+    };
 }
 
 /**

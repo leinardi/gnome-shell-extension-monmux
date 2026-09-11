@@ -196,6 +196,18 @@ fake_catalog() {
   exit 70
 }
 
+# `doctor` prints prose, not JSON, and answers from doctor.txt, captured from the
+# installed monmux, with exit 0. `doctor --show-serial` is not faked: its output is
+# exactly what the preferences window must never ask for, so asking fails loudly.
+fake_doctor() {
+  if has_flag --show-serial "$@"; then
+    echo "fake monmux: 'doctor --show-serial' is not faked" >&2
+    exit 70
+  fi
+
+  fixture doctor.txt
+}
+
 record_argv "$@"
 
 command="${1:-}"
@@ -213,6 +225,9 @@ case "${command}" in
     ;;
   catalog)
     fake_catalog "$@"
+    ;;
+  doctor)
+    fake_doctor "$@"
     ;;
   *)
     echo "fake monmux: unsupported command '${command}'" >&2

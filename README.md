@@ -27,11 +27,12 @@ Shipped:
 - a refresh on menu open and on monitor hotplug
 - a dry-run switch in the menu, which has `monmux` print the command instead of running it
 - [serial targeting](#serial-targeting) for more than one supported monitor, off by default and not hardware-verified
-- four [keyboard shortcut](#keyboard-shortcuts) slots, each switching to one input, set with `gsettings` for now
+- four [keyboard shortcut](#keyboard-shortcuts) slots, each switching to one input
+- a preferences window with the shortcuts and serial targeting, and a Diagnostics page that runs `monmux doctor` and shows the
+  installed version and where it was found
 
 Planned:
 
-- a preferences window with a diagnostics page (`monmux doctor`) and a page to set the shortcuts
 - translations
 
 There is no "current input" marker anywhere, and there will not be one: `monmux` never asks a monitor which input it is on, so
@@ -58,8 +59,9 @@ with two supported monitors has tried it.
 
 ## Keyboard shortcuts
 
-There are four slots, each a shortcut and the input it switches to. Until the preferences window has a page for them, set them
-with `gsettings`, pointing it at the schema the extension installed:
+There are four slots, each a shortcut and the input it switches to. Set them on the **Shortcuts** page of the extension's
+preferences: the dropdown lists every input name in `monmux`'s catalog, and the shortcut button asks for a key combination with
+Ctrl, Alt or Super in it. The same keys can be set with `gsettings`, pointing it at the schema the extension installed:
 
 ```sh
 SCHEMAS=~/.local/share/gnome-shell/extensions/monmux@leinardi.github.io/schemas
@@ -68,7 +70,7 @@ gsettings --schemadir "$SCHEMAS" set org.gnome.shell.extensions.monmux shortcut-
 ```
 
 - The input is named the way `monmux` names it, such as `dp`. Which display it belongs to is `monmux`'s decision, as for a
-  click in the menu.
+  click in the menu, so the dropdown offers every name the catalog records, not only the ones the attached monitor accepts.
 - A shortcut goes the way a click goes: **Dry run** applies to it, it is ignored while another switch runs, and its
   notification says the same things.
 - A shortcut names an input, not a display, so serial targeting never pins it. With two or more supported monitors attached,

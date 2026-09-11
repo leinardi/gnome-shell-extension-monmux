@@ -64,7 +64,8 @@ installed from source.
 - `src/` — exactly what `gnome-extensions pack` bundles, and nothing else.
     - `src/extension.js` — the Shell side. Thin: lifecycle, and calls into `src/ui` and `src/lib`. No parsing, no policy.
     - `src/prefs.js` — the preferences window. A separate GJS process with GTK and no Shell: never import St, Clutter or
-      anything under `resource:///org/gnome/shell/ui/`.
+      anything under `resource:///org/gnome/shell/ui/`. It runs `monmux` only through `readOnly(spawn)`, which refuses a
+      `switch` and `--show-serial` before any process starts, and ties every run to one cancellable closed with the window.
     - `src/lib/` — no `gi://St`, no `gi://Clutter`, no `resource:///`, no Shell import of any kind. This is what the test suite
       can run under plain `gjs`, and the reason to put logic here rather than in a widget. One role per module:
         - `monmux.js` — everything that talks to `monmux`, in two halves: the pure client, which builds argv arrays and
