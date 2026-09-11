@@ -32,7 +32,7 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import {installMonmux, troubleshootingGuide} from '../lib/links.js';
-import {MonmuxState, canOffer} from '../lib/model.js';
+import {MonmuxState, canOffer, sameModel} from '../lib/model.js';
 import {excerpt, openLink} from './common.js';
 
 /** @typedef {import('../lib/model.js').Model} Model */
@@ -90,6 +90,21 @@ export class MonmuxIndicator {
          * @type {PopupMenu.PopupMenuItem[]}
          */
         this._inputItems = [];
+
+        /**
+         * Every item of the current render that can be highlighted: the
+         * offered inputs and the links.
+         *
+         * @type {PopupMenu.PopupMenuItem[]}
+         */
+        this._contentItems = [];
+
+        /**
+         * The model the current render shows, or null when it shows none.
+         *
+         * @type {?Model}
+         */
+        this._shownModel = null;
 
         /**
          * The widget the extension adds to the panel.
@@ -193,6 +208,11 @@ export class MonmuxIndicator {
      * @returns {void}
      */
     showModel(model) {
+        // Rebuilding would destroy the item under the pointer, mid-hover or
+        // mid-click, for nothing.
+        if (sameModel(this._shownModel, model))
+            return;
+
         this._clear();
 
         const version = model.version;
@@ -221,6 +241,8 @@ export class MonmuxIndicator {
 
             this._content.addMenuItem(group);
         });
+
+        this._shownModel = model;
     }
 
     /**
@@ -247,14 +269,29 @@ export class MonmuxIndicator {
         this._destroyed = true;
         this._settings.disconnect(this._dryRunChangedId);
         this._inputItems = [];
+        this._contentItems = [];
+        this._shownModel = null;
     }
 
     /**
      * @returns {void}
      */
     _clear() {
+        // A destroyed item clears the highlight only in its own section, and
+        // the menu would reach for it again when it closes. So the highlight is
+        // released first, with key focus moved to the menu so arrow keys still
+        // work.
+        const focus = global.stage.get_key_focus();
+        if (this.menu.isOpen && focus !== null && this._content.actor.contains(focus))
+            this.menu.actor.grab_key_focus();
+
+        for (const item of this._contentItems)
+            item.active = false;
+
         this._content.removeAll();
         this._inputItems = [];
+        this._contentItems = [];
+        this._shownModel = null;
 
         // Only a model says which monmux answered. Loading and an error keep no
         // footer from a model they replaced.
@@ -274,7 +311,7 @@ export class MonmuxIndicator {
         group.addMenuItem(textItem(this._reasons.text(problem.reasonCode), detail, false));
 
         if (problem.reasonCode === MonmuxState.MISSING || problem.reasonCode === MonmuxState.TOO_OLD)
-            group.addMenuItem(linkItem(this._reasons.label('install-monmux'), installMonmux()));
+            group.addMenuItem(this._linkItem(this._reasons.label('install-monmux'), installMonmux()));
 
         return group;
     }
@@ -290,7 +327,7 @@ export class MonmuxIndicator {
         for (const check of checks)
             group.addMenuItem(textItem(this._checkText(check), null, false));
 
-        group.addMenuItem(linkItem(this._reasons.label('troubleshooting'), troubleshootingGuide()));
+        group.addMenuItem(this._linkItem(this._reasons.label('troubleshooting'), troubleshootingGuide()));
 
         return group;
     }
@@ -335,7 +372,7 @@ export class MonmuxIndicator {
         if (display.cta !== null) {
             const {text, link} = this._reasons.describe(display.cta);
             if (link !== null)
-                group.addMenuItem(linkItem(text, link));
+                group.addMenuItem(this._linkItem(text, link));
         }
 
         return group;
@@ -364,6 +401,7 @@ export class MonmuxIndicator {
         });
         item.setSensitive(!this._switching);
         this._inputItems.push(item);
+        this._contentItems.push(item);
 
         return item;
     }
@@ -387,6 +425,21 @@ export class MonmuxIndicator {
         // An input with no reason of its own is not offered because its display
         // is not, and canOffer() guarantees one of the two has a reason.
         return this._reasons.text(input.reasonCode ?? /** @type {string} */ (display.reasonCode));
+    }
+
+    /**
+     * An item that opens a documentation page, recorded with the render.
+     *
+     * @param {string} text What it says.
+     * @param {string} link An absolute URL from links.js.
+     * @returns {PopupMenu.PopupMenuItem} The item.
+     */
+    _linkItem(text, link) {
+        const item = new PopupMenu.PopupMenuItem(text);
+        item.connect('activate', () => openLink(link));
+        this._contentItems.push(item);
+
+        return item;
     }
 }
 
@@ -442,18 +495,4 @@ function wrappingLabel(text, styleClass) {
     label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
 
     return label;
-}
-
-/**
- * An item that opens a documentation page.
- *
- * @param {string} text What it says.
- * @param {string} link An absolute URL from links.js.
- * @returns {PopupMenu.PopupMenuItem} The item.
- */
-function linkItem(text, link) {
-    const item = new PopupMenu.PopupMenuItem(text);
-    item.connect('activate', () => openLink(link));
-
-    return item;
 }

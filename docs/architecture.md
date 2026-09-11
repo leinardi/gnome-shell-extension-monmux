@@ -216,6 +216,12 @@ and only then replaces the menu and the serial map together. At every step a res
 cancelled or the generation it started in is no longer current. That covers a result arriving after a `disable()`, and after
 a whole disable-and-enable.
 
+The menu is only rebuilt when the new model differs from the one it shows (`sameModel()`), which is not the case for most
+refreshes a menu-open starts: rebuilding would destroy the item under the pointer. Before a rebuild, key focus moves from
+the old items to the menu and every one of them is un-highlighted, because the Shell remembers the highlighted item in each
+enclosing section and a destroyed item only clears it in its own; the menu would otherwise reach for the destroyed item when
+it closes. A model that really changed while an input is held down still replaces that input, and the click is dropped.
+
 ### Switching
 
 A click in the menu and a shortcut both end in `_switch()`, so both follow **Dry run**, and both get the same notifications.
