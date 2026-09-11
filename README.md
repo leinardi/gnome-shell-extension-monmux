@@ -14,17 +14,21 @@ and it can enable nothing `monmux` refuses.
 
 ## Status
 
-**In development. Not yet on extensions.gnome.org.** The repository today holds the tooling, the packaging and the extension
-skeleton: the indicator appears in the panel and its menu says it is not configured yet. The features below are the plan, not
-a description of what is installed.
+**In development. Not yet on extensions.gnome.org.** The panel menu is built and needs `monmux` 0.6.0 or newer. It has been
+exercised in a nested GNOME Shell against a fake `monmux`, and not yet against a real monitor: that is the checklist in
+[`docs/testing.md`](docs/testing.md).
 
-Planned:
+Shipped:
 
 - one section per attached display, with its inputs as menu items
 - greyed-out inputs for models the catalog records but has not write-enabled, with a "test and report this monitor" link
 - a notification per switch: sent, refused with the reason and a troubleshooting link, or "the write status is unknown"
-- the installed `monmux` version in the menu, and a prompt with an install link when `monmux` is missing
+- the installed `monmux` version in the menu, and a prompt with an install link when `monmux` is missing or too old
 - a refresh on menu open and on monitor hotplug
+- a dry-run switch in the menu, which has `monmux` print the command instead of running it
+
+Planned:
+
 - a preferences window with a diagnostics page (`monmux doctor`) and per-display keyboard shortcuts
 - translations
 

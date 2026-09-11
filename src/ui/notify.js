@@ -90,7 +90,37 @@ export class Notifier {
         if (result === null)
             return;
 
-        const {title, body, actions} = this._compose(result);
+        this._post(this._compose(result));
+    }
+
+    /**
+     * Tell the user that a switch produced no result at all.
+     *
+     * Three things end up here, and nothing here can tell them apart: an input
+     * name the client rejected before running anything, a monmux that could not
+     * be started, and a monmux that ran and wrote output that is not valid
+     * UTF-8, which may have sent a command. Only a refusal may promise that
+     * nothing was written, so all three say that the write status is unknown.
+     *
+     * @param {unknown} error What the adapter threw.
+     * @returns {void}
+     */
+    notifyError(error) {
+        this._post({
+            title: this._reasons.label('failed-title'),
+            body: lines(
+                this._reasons.label('run-failed'),
+                this._reasons.label('write-status-unknown'),
+                excerpt(String(error))),
+            actions: [],
+        });
+    }
+
+    /**
+     * @param {Message} message What to post.
+     * @returns {void}
+     */
+    _post({title, body, actions}) {
         const source = this._ensureSource();
 
         const notification = new MessageTray.Notification({source, title, body});

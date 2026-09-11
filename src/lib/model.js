@@ -224,15 +224,13 @@ export function buildModel({version, info, catalog}) {
     if (version === null)
         return unusable(MonmuxState.MISSING, null, null);
 
-    switch (checkVersion(version)) {
-    case VersionState.OK:
-        break;
-    case VersionState.TOO_OLD:
-        return unusable(MonmuxState.TOO_OLD, reportedVersion(version), null);
-    default:
-        // The raw text is the only evidence of what this binary is, so it
-        // travels with the state rather than being replaced by a guess.
-        return unusable(MonmuxState.UNKNOWN, reportedVersion(version), rawText(version));
+    if (!needsReports(version)) {
+        // The raw text of an unidentified binary is the only evidence of what
+        // it is, so it travels with the state rather than being replaced by a
+        // guess.
+        return checkVersion(version) === VersionState.TOO_OLD
+            ? unusable(MonmuxState.TOO_OLD, reportedVersion(version), null)
+            : unusable(MonmuxState.UNKNOWN, reportedVersion(version), rawText(version));
     }
 
     if (info === null || catalog === null)
@@ -265,6 +263,23 @@ export function buildModel({version, info, catalog}) {
         checks,
         displays,
     };
+}
+
+/**
+ * Whether a model built on this version result reads the info and catalog
+ * results.
+ *
+ * The one place that is decided. buildModel() follows it, and the extension
+ * asks it before running `info` and `catalog list` at all: a monmux the version
+ * gate turns away is asked nothing more, because nothing more it said would be
+ * read.
+ *
+ * @param {?ClientResult} version The result of `version()`, or null when
+ *   `locate()` found no monmux.
+ * @returns {boolean} Whether `info` and `catalog list` have to be run.
+ */
+export function needsReports(version) {
+    return version !== null && checkVersion(version) === VersionState.OK;
 }
 
 /**

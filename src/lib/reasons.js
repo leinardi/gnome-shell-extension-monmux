@@ -308,6 +308,7 @@ const LABEL_ENTRIES = {
     'write-status-unknown': _ => _('The write status is unknown.'),
     'protocol-title': _ => _('monmux gave an unexpected answer'),
     'too-old-title': _ => _('monmux is too old'),
+    'run-failed': _ => _('monmux could not be run, or what it wrote could not be read.'),
 };
 
 /**

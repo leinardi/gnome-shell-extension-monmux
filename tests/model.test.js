@@ -32,7 +32,7 @@
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 
-import {EMITTED, InputState, MonmuxState, buildModel, canOffer} from '../src/lib/model.js';
+import {EMITTED, InputState, MonmuxState, buildModel, canOffer, needsReports} from '../src/lib/model.js';
 import {Monmux} from '../src/lib/monmux.js';
 import {assertDeepEqual, assertEqual, assertThrows, describe, fail, it} from './harness.js';
 
@@ -480,6 +480,51 @@ describe('buildModel monmux states', () => {
         const version = await new Monmux(() => Promise.resolve(answering('version.json'))).version();
 
         assertThrows(() => buildModel({version, info: null, catalog: null}));
+    });
+});
+
+describe('needsReports', () => {
+    /**
+     * @param {{exitCode: number, stdout: string, stderr: string}} reply What
+     *   `version --json` answers.
+     * @returns {Promise<?import('../src/lib/monmux.js').Result>} The client's
+     *   result.
+     */
+    function versionOf(reply) {
+        return new Monmux(() => Promise.resolve(reply)).version();
+    }
+
+    it('asks for the reports only from a monmux the version gate accepts', async () => {
+        const accepted = await versionOf(answering('version.json'));
+        const tooOld = await versionOf(answer(1, '', 'Error: unknown flag: --json\n'));
+        const unidentified = await versionOf(answer(0, 'not a document'));
+
+        assertEqual(needsReports(accepted), true, 'accepted');
+        assertEqual(needsReports(tooOld), false, 'too old');
+        assertEqual(needsReports(unidentified), false, 'unidentified');
+        assertEqual(needsReports(null), false, 'missing');
+    });
+
+    it('agrees with buildModel, which reads no report exactly when none is needed', async () => {
+        // The extension skips `info` and `catalog list` on this answer alone, so
+        // a model that still wanted them would throw on the nulls it is handed.
+        const replies = [
+            answering('version.json'),
+            answer(1, '', 'Error: unknown flag: --json\n'),
+            answer(0, 'not a document'),
+            answer(1, '', 'monmux: could not read the build information\n'),
+        ];
+
+        for (const reply of replies) {
+            // eslint-disable-next-line no-await-in-loop
+            const version = await versionOf(reply);
+            const build = () => buildModel({version, info: null, catalog: null});
+
+            if (needsReports(version))
+                assertThrows(build);
+            else
+                assertEqual(build().displays.length, 0, 'displays');
+        }
     });
 });
 

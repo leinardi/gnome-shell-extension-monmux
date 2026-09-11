@@ -170,6 +170,27 @@ export class MonmuxIndicator {
     }
 
     /**
+     * The button's menu, typed as the real menu it is.
+     *
+     * @returns {PopupMenu.PopupMenu} The menu.
+     */
+    get menu() {
+        return /** @type {PopupMenu.PopupMenu} */ (this.button.menu);
+    }
+
+    /**
+     * Show that monmux could not be run to read the displays, in place of
+     * whatever is shown.
+     *
+     * @param {string} message What the Shell reported.
+     * @returns {void}
+     */
+    showError(message) {
+        this._clear();
+        this._content.addMenuItem(textItem(this._reasons.label('run-failed'), excerpt(message), false));
+    }
+
+    /**
      * Show that the displays are being read, in place of whatever is shown.
      *
      * @returns {void}
@@ -248,6 +269,10 @@ export class MonmuxIndicator {
     _clear() {
         this._content.removeAll();
         this._inputItems = [];
+
+        // Only a model says which monmux answered. Loading and an error keep no
+        // footer from a model they replaced.
+        this._versionItem.visible = false;
     }
 
     /**
