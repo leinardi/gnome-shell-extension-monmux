@@ -65,8 +65,15 @@ installed from source.
     - `src/extension.js` — the Shell side. Thin: lifecycle, widgets, and calls into `src/lib`. No parsing, no policy.
     - `src/prefs.js` — the preferences window. A separate GJS process with GTK and no Shell: never import St, Clutter or
       anything under `resource:///org/gnome/shell/ui/`.
-    - `src/lib/` — pure modules. No `gi://St`, no `gi://Clutter`, no `resource:///`, no Shell import of any kind. This is what
-      the test suite can run under plain `gjs`, and the reason to put logic here rather than in a widget.
+    - `src/lib/` — no `gi://St`, no `gi://Clutter`, no `resource:///`, no Shell import of any kind. This is what the test suite
+      can run under plain `gjs`, and the reason to put logic here rather than in a widget. One role per module:
+        - `monmux.js` — everything that talks to `monmux`, in two halves: the pure client, which builds argv arrays and
+          classifies answers, and `spawn`, the one adapter in the repository that starts a process. Nothing else spawns.
+        - `exitCode.js` — the only place an exit code is given a meaning.
+        - `version.js` — the version gate.
+        - `model.js` — what the menu shows, built from what `monmux` reported. Pure, and it emits codes, never sentences.
+        - `reasons.js` — the only mapping from a code to text a user reads, translated through the `gettext` it is handed.
+        - `links.js` — the only source of URLs. Nothing else builds one.
     - `src/schemas/` — the GSettings schema. `make ext-schemas` compiles it; the compiled file is not committed.
 - `tests/` — the gjs suite, the harness, the fixtures, and `tests/bin/monmux`, the fake that is the only `monmux` any automated
   thing in this repository is allowed to see.

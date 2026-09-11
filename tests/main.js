@@ -32,6 +32,7 @@ const {finish, settle} = await import('./harness.js');
 
 await import('./exitCode.test.js');
 await import('./links.test.js');
+await import('./model.test.js');
 await import('./monmux.test.js');
 await import('./reasons.test.js');
 await import('./version.test.js');

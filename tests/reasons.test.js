@@ -19,6 +19,7 @@
 
 import GLib from 'gi://GLib';
 
+import {EMITTED} from '../src/lib/model.js';
 import {CODES, Reasons} from '../src/lib/reasons.js';
 import {assertDeepEqual, assertEqual, describe, fail, it} from './harness.js';
 
@@ -34,7 +35,8 @@ import {assertDeepEqual, assertEqual, describe, fail, it} from './harness.js';
  * Sources, in the monmux repository: internal/refusal/refusal.go for the
  * refusal reasons, internal/backend/display.go for the statuses,
  * internal/catalog/catalog.go for the match results and the grades. The monmux
- * states and the input states are this extension's own, from the model.
+ * states, the input states, the report problems and the call to action are this
+ * extension's own, from the model.
  */
 const EXPECTED = Object.freeze({
     refusal: Object.freeze([
@@ -60,6 +62,8 @@ const EXPECTED = Object.freeze({
     grade: Object.freeze(['verified', 'documented', 'reported', 'quoted']),
     // `ok` is deliberately absent: the menu shows the displays, not a sentence.
     monmux: Object.freeze(['missing', 'too-old', 'unknown']),
+    report: Object.freeze(['report-refused', 'report-failed', 'catalog-failed', 'protocol']),
+    cta: Object.freeze(['adding-a-monitor']),
 });
 
 /** Every code, flattened out of the groups. */
@@ -96,6 +100,26 @@ describe('Reasons', () => {
     });
 
     it('has a translated entry for every code the model can emit', () => {
+        // The model's own table, not this file's: a code the model starts
+        // emitting fails here until somebody writes a sentence for it. That
+        // the table is complete is model.test.js's to prove, by building a
+        // model for every scenario and comparing what came out against it.
+        const reasons = new Reasons(translate);
+
+        for (const [field, codes] of Object.entries(EMITTED)) {
+            for (const code of codes) {
+                const {text} = reasons.describe(code);
+
+                if (text === code)
+                    fail(`${field} code ${code} has no entry: it rendered as itself`);
+
+                if (!text.startsWith('[') || !text.endsWith(']'))
+                    fail(`${field} code ${code} produced ${text}, which did not go through gettext`);
+            }
+        }
+    });
+
+    it('translates every entry in its own table', () => {
         const reasons = new Reasons(translate);
 
         for (const code of everyCode) {

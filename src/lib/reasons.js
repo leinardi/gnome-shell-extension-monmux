@@ -223,6 +223,45 @@ const MONMUX_STATES = {
 };
 
 /**
+ * Why the menu cannot show the displays as monmux normally reports them.
+ *
+ * No link: none of these has a section of its own anywhere, and the text monmux
+ * wrote travels with the code for the menu to show next to it.
+ *
+ * @type {{[code: string]: ReasonEntry}}
+ */
+const REPORT_PROBLEMS = {
+    'report-refused': {
+        text: _ => _('monmux refused while reading the displays.'),
+        link: null,
+    },
+    'report-failed': {
+        text: _ => _('monmux failed while reading the displays.'),
+        link: null,
+    },
+    'catalog-failed': {
+        text: _ => _('monmux failed while reading its catalog.'),
+        link: null,
+    },
+    'protocol': {
+        text: _ => _('monmux gave an answer that does not follow its documented format.'),
+        link: null,
+    },
+};
+
+/**
+ * What the menu invites the user to do about a display.
+ *
+ * @type {{[code: string]: ReasonEntry}}
+ */
+const CALLS_TO_ACTION = {
+    'adding-a-monitor': {
+        text: _ => _('Test and report this monitor'),
+        link: addingAMonitor(),
+    },
+};
+
+/**
  * Every code that has an entry, grouped as the model groups them.
  *
  * Exported so a test can assert that the model and this table agree, which is
@@ -236,6 +275,8 @@ export const CODES = Object.freeze({
     inputState: Object.freeze(Object.keys(INPUT_STATES)),
     grade: Object.freeze(Object.keys(GRADES)),
     monmux: Object.freeze(Object.keys(MONMUX_STATES)),
+    report: Object.freeze(Object.keys(REPORT_PROBLEMS)),
+    cta: Object.freeze(Object.keys(CALLS_TO_ACTION)),
 });
 
 /**
@@ -254,6 +295,8 @@ const ENTRIES = {
     ...INPUT_STATES,
     ...GRADES,
     ...MONMUX_STATES,
+    ...REPORT_PROBLEMS,
+    ...CALLS_TO_ACTION,
 };
 
 /**
