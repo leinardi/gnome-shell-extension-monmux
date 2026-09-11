@@ -162,6 +162,7 @@ Run this before a release, and whenever a change touches the switch path. Nothin
 | 11 | Turn **Dry run** off and press the same shortcut | the monitor switches, and the notification is the one a click on that input gets |
 | 12 | **Preferences → Diagnostics → Run monmux doctor**, then **Copy** and paste it somewhere | the same lines `monmux doctor` prints in a terminal, and the version and location match `monmux version` and `command -v monmux`; nothing on the monitor changes |
 | 13 | Close the preferences window straight after pressing **Run monmux doctor** | the window closes; `make ext-logs` shows no warning about a widget |
+| 14 | In an Italian session (or with `LANGUAGE=it`), open the menu, a notification and the preferences | every string the extension writes is in Italian; `monmux`'s own words, such as a check's name, stay as it wrote them |
 
 Record what happened in the pull request. If a step changed a monitor's input, say which monitor and which input — that is the
 evidence, and for a new model it belongs in a monitor report in the [monmux](https://github.com/leinardi/monmux) repository.

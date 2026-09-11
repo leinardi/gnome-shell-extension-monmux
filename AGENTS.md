@@ -90,18 +90,25 @@ installed from source.
 - `tests/` — the gjs suite, the harness, the fixtures, and `tests/bin/monmux`, the fake that is the only `monmux` any automated
   thing in this repository is allowed to see.
 - `scripts/check-metadata.js` — the pre-commit gate on `src/metadata.json`.
+- `scripts/check-bundle.js` — what `make ext-pack` checks the zip against: `src/`, plus a compiled catalog per language.
+- `scripts/check-pot.js` — the translation template's drift check, and with `--write` its regeneration. The xgettext
+  arguments live here and nowhere else.
 - `.mk/extension.mk` — every `ext-*` target. `Makefile` itself holds no recipes.
-- `po/` — translations, from phase 2 onwards, when there is a first translatable string to extract.
+- `po/` — the translation template, `po/LINGUAS` and one `.po` per language. After changing a user-visible string, run
+  `make ext-pot` and commit what it changed: `make ext-pot-check`, which CI and `make verify` run, fails otherwise. Both need
+  `gettext` installed, and so does `make ext-pack` once `po/` exists.
 
 ## Common commands
 
 ```bash
 make ext-deps          # npm ci — required once after cloning, the hooks depend on it
-make verify            # ext-lint + ext-typecheck + ext-test + ext-schemas + ext-pack
+make verify            # ext-lint + ext-typecheck + ext-test + ext-pot-check + ext-schemas + ext-pack
 make ext-lint          # eslint . --max-warnings 0
 make ext-lint-fix      # the same with --fix
 make ext-typecheck     # tsc --noEmit over @girs types
 make ext-test          # the gjs suite, against tests/bin/monmux
+make ext-pot           # regenerate po/*.pot and merge it into every po/*.po (needs gettext)
+make ext-pot-check     # fail when po/ lags behind src/ (needs gettext)
 make ext-schemas       # glib-compile-schemas --strict src/schemas
 make ext-pack          # dist/monmux@leinardi.github.io.shell-extension.zip
 make ext-install       # install that zip into this user's session

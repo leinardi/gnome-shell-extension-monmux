@@ -27,7 +27,9 @@
  *
  * So this compares the bundle against src/ rather than against a hand-written
  * list: everything shippable under src/ has to be in the zip, and nothing that
- * does not belong may be.
+ * does not belong may be. The one tree with no counterpart under src/ is
+ * locale/, which --podir compiles from po/, and every language po/LINGUAS lists
+ * has to arrive there.
  *
  * `unzip -Z1` rather than a zip library: it is already needed to inspect a
  * bundle by hand, and a dependency for reading eight file names would be a
@@ -35,12 +37,14 @@
  */
 
 import {execFileSync} from 'node:child_process';
-import {readdirSync, existsSync} from 'node:fs';
+import {readdirSync, readFileSync, existsSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {dirname, join, relative, sep} from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(ROOT, 'src');
+const LINGUAS = join(ROOT, 'po', 'LINGUAS');
+const DOMAIN = 'gnome-shell-extension-monmux';
 
 // Compiled by whoever installs the bundle - `gnome-extensions install` and
 // extensions.gnome.org both run glib-compile-schemas over the extracted tree -
@@ -109,6 +113,18 @@ for (const file of inZip) {
 for (const required of ['metadata.json', 'extension.js', 'prefs.js', 'schemas/org.gnome.shell.extensions.monmux.gschema.xml']) {
     if (!inZip.has(required))
         problems.push(`${required} is missing from the bundle`);
+}
+
+// A language whose catalog did not make it into the zip is not an error the
+// Shell reports: the extension simply stays in English for everybody who picked
+// that language.
+if (existsSync(LINGUAS)) {
+    const languages = readFileSync(LINGUAS, 'utf8').replace(/#.*$/gm, '').split(/\s+/).filter(each => each !== '');
+    for (const language of languages) {
+        const catalog = `locale/${language}/LC_MESSAGES/${DOMAIN}.mo`;
+        if (!inZip.has(catalog))
+            problems.push(`${catalog} is missing from the bundle, though po/LINGUAS lists ${language}`);
+    }
 }
 
 if (problems.length > 0) {

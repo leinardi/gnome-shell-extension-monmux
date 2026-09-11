@@ -9,7 +9,8 @@ typical GNOME extension's for that reason, and one of them is absolute — read
 - GNOME Shell 46 or newer, and a Wayland or X11 session to test in
 - `gjs`, `libglib2.0-bin` (`glib-compile-schemas`) and `gnome-shell` or `gnome-shell-common` (`gnome-extensions`) —
   on Fedora: `gjs`, `glib2-devel`, `gnome-shell`
-- `gettext` for `make ext-pot`
+- `gettext`: `make ext-pack` compiles the translations with `msgfmt`, and `make ext-pot` and `make ext-pot-check` run
+  `xgettext`, `msgmerge` and `msgcmp`
 - Node 22+ — run `make ext-deps` once after cloning; the pre-commit hooks are `language: system` and use that `node_modules`
 - [`pre-commit`](https://pre-commit.com/) — install the hooks once with `make pre-commit-install`
 - [`monmux`](https://github.com/leinardi/monmux) for running the extension against a real monitor. Nothing in this repository

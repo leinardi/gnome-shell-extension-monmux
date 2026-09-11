@@ -1,0 +1,442 @@
+# Italian translation for gnome-shell-extension-monmux.
+# Copyright (C) 2026 Roberto Leinardi
+# This file is distributed under the same license as the gnome-shell-extension-monmux package.
+#
+# A first draft, awaiting review by a native speaker before a release ships it.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: gnome-shell-extension-monmux\n"
+"Report-Msgid-Bugs-To: https://github.com/leinardi/gnome-shell-extension-"
+"monmux/issues\n"
+"POT-Creation-Date: 2026-09-11 11:34+0200\n"
+"PO-Revision-Date: 2026-09-11 11:30+0200\n"
+"Last-Translator: Roberto Leinardi <leinardi@gmail.com>\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/lib/reasons.js:64
+msgid "No monitor-control backend is available for this system."
+msgstr ""
+"Nessun backend di controllo dei monitor è disponibile per questo sistema."
+
+#: src/lib/reasons.js:68
+msgid "The backend tool is not usable."
+msgstr "Lo strumento del backend non è utilizzabile."
+
+#: src/lib/reasons.js:72
+msgid "The attached displays could not be listed."
+msgstr "Impossibile elencare gli schermi collegati."
+
+#: src/lib/reasons.js:76
+msgid "No display was detected."
+msgstr "Nessuno schermo rilevato."
+
+#: src/lib/reasons.js:80
+msgid "This display cannot be written to."
+msgstr "Impossibile scrivere su questo schermo."
+
+#: src/lib/reasons.js:84
+msgid "No catalog entry matches this monitor."
+msgstr "Nessuna voce del catalogo corrisponde a questo monitor."
+
+#: src/lib/reasons.js:88 src/lib/reasons.js:152
+msgid "More than one catalog entry claims this monitor."
+msgstr "Più voci del catalogo corrispondono a questo monitor."
+
+#: src/lib/reasons.js:92
+msgid "More than one attached display could be the one meant."
+msgstr "Più di uno schermo collegato potrebbe essere quello inteso."
+
+#: src/lib/reasons.js:96
+msgid "This input is not enabled for this model."
+msgstr "Questo ingresso non è abilitato per questo modello."
+
+#: src/lib/reasons.js:100
+msgid "No attached display matches the pinned serial number."
+msgstr "Nessuno schermo collegato corrisponde al numero di serie fissato."
+
+#: src/lib/reasons.js:104
+msgid "This display cannot be reached over DDC right now."
+msgstr "Al momento questo schermo non è raggiungibile tramite DDC."
+
+#: src/lib/reasons.js:108
+msgid "The display changed between being identified and being written to."
+msgstr "Lo schermo è cambiato tra l'identificazione e la scrittura."
+
+#: src/lib/reasons.js:112
+msgid "This backend does not implement the requested operation."
+msgstr "Questo backend non implementa l'operazione richiesta."
+
+#: src/lib/reasons.js:127
+msgid "This display exposes no DDC channel."
+msgstr "Questo schermo non espone alcun canale DDC."
+
+#: src/lib/reasons.js:131
+msgid "This display's EDID could not be read."
+msgstr "Impossibile leggere l'EDID di questo schermo."
+
+#: src/lib/reasons.js:135
+msgid "This display has no UUID to address it by."
+msgstr "Questo schermo non ha un UUID con cui indirizzarlo."
+
+#: src/lib/reasons.js:148
+msgid "Not in the monmux catalog."
+msgstr "Non presente nel catalogo di monmux."
+
+#: src/lib/reasons.js:164
+msgid "Enabled for this model."
+msgstr "Abilitato per questo modello."
+
+#: src/lib/reasons.js:168
+msgid "Recorded, not write-enabled."
+msgstr "Registrato, scrittura non abilitata."
+
+#: src/lib/reasons.js:188
+msgid "tested directly on this model"
+msgstr "provato direttamente su questo modello"
+
+#: src/lib/reasons.js:192
+msgid "from the manufacturer's documentation"
+msgstr "dalla documentazione del produttore"
+
+#: src/lib/reasons.js:196
+msgid "reported working for this input"
+msgstr "segnalato come funzionante per questo ingresso"
+
+#: src/lib/reasons.js:200
+msgid "quoted in a report, inputs not tried one by one"
+msgstr "citato in una segnalazione, ingressi non provati uno per uno"
+
+#: src/lib/reasons.js:213
+msgid "monmux is not installed."
+msgstr "monmux non è installato."
+
+#. Translators: {minimum} is a version number, such as 0.6.0.
+#: src/lib/reasons.js:218
+msgid ""
+"The installed monmux is too old for this extension, which needs version "
+"{minimum} or newer."
+msgstr ""
+"La versione installata di monmux è troppo vecchia per questa estensione, che "
+"richiede la versione {minimum} o successiva."
+
+#: src/lib/reasons.js:222
+msgid "The installed monmux could not be identified."
+msgstr "Impossibile identificare il programma monmux installato."
+
+#: src/lib/reasons.js:237
+msgid "monmux refused while reading the displays."
+msgstr "monmux ha rifiutato durante la lettura degli schermi."
+
+#: src/lib/reasons.js:241
+msgid "monmux failed while reading the displays."
+msgstr "monmux non è riuscito a leggere gli schermi."
+
+#: src/lib/reasons.js:245
+msgid "monmux failed while reading its catalog."
+msgstr "monmux non è riuscito a leggere il proprio catalogo."
+
+#: src/lib/reasons.js:249
+msgid "monmux gave an answer that does not follow its documented format."
+msgstr "monmux ha dato una risposta che non segue il formato documentato."
+
+#: src/lib/reasons.js:253
+msgid ""
+"The serial numbers could not be read, so a click cannot be pinned to one "
+"display."
+msgstr ""
+"Impossibile leggere i numeri di serie, quindi un clic non può essere fissato "
+"a un solo schermo."
+
+#: src/lib/reasons.js:265
+msgid "Test and report this monitor"
+msgstr "Prova e segnala questo monitor"
+
+#: src/lib/reasons.js:284
+msgid "Reading displays…"
+msgstr "Lettura degli schermi…"
+
+#: src/lib/reasons.js:285
+msgid "Unnamed display"
+msgstr "Schermo senza nome"
+
+#: src/lib/reasons.js:286
+msgid "How to install monmux"
+msgstr "Come installare monmux"
+
+#: src/lib/reasons.js:287
+msgid "Troubleshooting"
+msgstr "Risoluzione dei problemi"
+
+#: src/lib/reasons.js:288
+msgid "Report this"
+msgstr "Segnala"
+
+#. Translators: {version} is the version monmux reported, such as v0.6.0.
+#: src/lib/reasons.js:290
+msgid "monmux {version}"
+msgstr "monmux {version}"
+
+#: src/lib/reasons.js:291
+msgid "Dry run"
+msgstr "Simulazione"
+
+#: src/lib/reasons.js:292
+msgid "Preferences"
+msgstr "Preferenze"
+
+#. Translators: {name} and {detail} are monmux's own untranslated words for
+#. one of its checks, such as "ddcutil binary" and "not found on PATH".
+#: src/lib/reasons.js:295
+msgid "{name}: {detail}"
+msgstr "{name}: {detail}"
+
+#. Translators: {state} is the sentence "Recorded, not write-enabled." and
+#. {grade} how strong the evidence is, such as "tested directly on this model".
+#: src/lib/reasons.js:298
+msgid "{state} Evidence: {grade}."
+msgstr "{state} Prova: {grade}."
+
+#. Translators: the name of the tool, used as the panel button's accessible
+#. name and as the title of the notification source.
+#: src/lib/reasons.js:301 src/prefs.js:435 src/prefs.js:558
+msgid "monmux"
+msgstr "monmux"
+
+#: src/lib/reasons.js:302
+msgid "Input-switch command sent"
+msgstr "Comando di cambio ingresso inviato"
+
+#. Translators: {input} is an input such as DisplayPort, {display} a connector
+#. such as card1-DP-1, and {model} a monitor model. Never say the monitor
+#. switched: monmux only knows that the command was sent.
+#: src/lib/reasons.js:306
+msgid ""
+"Sent {input} to {display} ({model}). Whether the monitor changed input is "
+"not independently confirmed."
+msgstr ""
+"Inviato {input} a {display} ({model}). Il cambio di ingresso del monitor non "
+"è confermato in modo indipendente."
+
+#: src/lib/reasons.js:307
+msgid "monmux refused"
+msgstr "monmux ha rifiutato"
+
+#: src/lib/reasons.js:308
+msgid "No DDC write was performed."
+msgstr "Non è stata eseguita alcuna scrittura DDC."
+
+#: src/lib/reasons.js:309
+msgid "monmux failed"
+msgstr "monmux non è riuscito"
+
+#. Translators: said of every run that did not end in a refusal and did not
+#. report success. Keep it exactly as definite: the status is not known.
+#: src/lib/reasons.js:312
+msgid "The write status is unknown."
+msgstr "Lo stato della scrittura è sconosciuto."
+
+#: src/lib/reasons.js:313
+msgid "monmux gave an unexpected answer"
+msgstr "monmux ha dato una risposta inattesa"
+
+#: src/lib/reasons.js:314
+msgid "monmux is too old"
+msgstr "monmux è troppo vecchio"
+
+#: src/lib/reasons.js:315
+msgid "monmux could not be run, or what it wrote could not be read."
+msgstr "Impossibile eseguire monmux, oppure leggere ciò che ha scritto."
+
+#. Translators: "Serial targeting" is the name of the switch on the Shortcuts
+#. page of the extension's preferences.
+#: src/lib/reasons.js:318
+msgid ""
+"To pick one of them from the menu, turn on Serial targeting in the "
+"preferences."
+msgstr ""
+"Per sceglierne uno dal menu, attivare «Selezione per numero di serie» nelle "
+"preferenze."
+
+#. Translators: {slot} is the number of a keyboard shortcut slot, such as 1.
+#: src/lib/reasons.js:320
+msgid "Shortcut {slot} has no input to switch to"
+msgstr "La scorciatoia {slot} non ha un ingresso a cui passare"
+
+#. Translators: {slot} is the number of a keyboard shortcut slot, such as 1.
+#: src/lib/reasons.js:322
+msgid "Shortcut {slot} is not set to an input name"
+msgstr "La scorciatoia {slot} non è impostata sul nome di un ingresso"
+
+#. Translators: said when a shortcut was pressed and the extension did not
+#. start monmux at all, so nothing could have been sent to a monitor.
+#: src/lib/reasons.js:325
+msgid "monmux was not run."
+msgstr "monmux non è stato eseguito."
+
+#: src/prefs.js:142
+msgid "Shortcuts"
+msgstr "Scorciatoie"
+
+#: src/prefs.js:147
+msgid "Monitors"
+msgstr "Monitor"
+
+#: src/prefs.js:153
+msgid "Serial targeting"
+msgstr "Selezione per numero di serie"
+
+#: src/prefs.js:154
+msgid ""
+"When more than one supported monitor is attached, read their serial numbers "
+"so that a click can target one. Serials are read from monmux and are never "
+"shown or logged."
+msgstr ""
+"Quando sono collegati più monitor supportati, ne legge i numeri di serie in "
+"modo che un clic possa indirizzarne uno. I numeri di serie vengono letti da "
+"monmux e non vengono mai mostrati né registrati."
+
+#: src/prefs.js:165
+msgid "Keyboard shortcuts"
+msgstr "Scorciatoie da tastiera"
+
+#: src/prefs.js:166
+msgid ""
+"Each shortcut switches to one input, the way a click in the menu does, and "
+"follows Dry run. It names an input, not a display: which display that is "
+"stays monmux's decision, and a shortcut is never pinned to a serial number."
+msgstr ""
+"Ogni scorciatoia passa a un ingresso, come fa un clic nel menu, e rispetta "
+"la simulazione. Indica un ingresso, non uno schermo: quale schermo sia resta "
+"una decisione di monmux, e una scorciatoia non è mai fissata a un numero di "
+"serie."
+
+#: src/prefs.js:170
+msgid "The catalog could not be read"
+msgstr "Impossibile leggere il catalogo"
+
+#: src/prefs.js:171
+msgid ""
+"Only the input each shortcut already has is offered. The Diagnostics page "
+"shows what monmux reports."
+msgstr ""
+"Viene proposto solo l'ingresso già assegnato a ogni scorciatoia. La pagina "
+"Diagnostica mostra ciò che riporta monmux."
+
+#. Translators: {slot} is the number of a keyboard shortcut slot, such as 1.
+#: src/prefs.js:218 src/prefs.js:331
+msgid "Shortcut {slot}"
+msgstr "Scorciatoia {slot}"
+
+#: src/prefs.js:229
+msgid "The input this shortcut switches to"
+msgstr "L'ingresso a cui passa questa scorciatoia"
+
+#: src/prefs.js:251
+msgid "No input"
+msgstr "Nessun ingresso"
+
+#: src/prefs.js:270
+msgid "No shortcut"
+msgstr "Nessuna scorciatoia"
+
+#: src/prefs.js:277
+msgid "Set the shortcut"
+msgstr "Imposta la scorciatoia"
+
+#: src/prefs.js:284
+msgid "Remove the shortcut"
+msgstr "Rimuovi la scorciatoia"
+
+#: src/prefs.js:336
+msgid "Press the new shortcut"
+msgstr "Premere la nuova scorciatoia"
+
+#: src/prefs.js:337
+msgid ""
+"It needs Ctrl, Alt or Super. Press Escape to cancel, or Backspace to remove "
+"the shortcut. If GNOME asks whether this window may capture shortcuts, allow "
+"it: otherwise pressing a combination that is already set runs that shortcut, "
+"which switches an input, instead of capturing it."
+msgstr ""
+"Deve includere Ctrl, Alt o Super. Premere Esc per annullare o Backspace per "
+"rimuovere la scorciatoia. Se GNOME chiede se questa finestra può catturare "
+"le scorciatoie, consentirlo: altrimenti, premendo una combinazione già "
+"impostata si esegue quella scorciatoia, che cambia un ingresso, invece di "
+"catturarla."
+
+#: src/prefs.js:430
+msgid "Diagnostics"
+msgstr "Diagnostica"
+
+#: src/prefs.js:441
+msgid "Location"
+msgstr "Posizione"
+
+#: src/prefs.js:448
+msgid "Version"
+msgstr "Versione"
+
+#: src/prefs.js:449
+msgid "Reading…"
+msgstr "Lettura…"
+
+#: src/prefs.js:460
+msgid "Doctor"
+msgstr "Doctor"
+
+#: src/prefs.js:461
+msgid ""
+"monmux doctor checks the backend tool and every attached display, one line "
+"per check. It only reads: nothing is written to any monitor."
+msgstr ""
+"monmux doctor controlla lo strumento del backend e ogni schermo collegato, "
+"una riga per controllo. Esegue solo letture: non viene scritto nulla su "
+"alcun monitor."
+
+#: src/prefs.js:465
+msgid "Run monmux doctor"
+msgstr "Esegui monmux doctor"
+
+#: src/prefs.js:472
+msgid "Copy"
+msgstr "Copia"
+
+#: src/prefs.js:507
+msgid "Running monmux doctor…"
+msgstr "Esecuzione di monmux doctor…"
+
+#: src/prefs.js:553
+msgid "About"
+msgstr "Informazioni"
+
+#: src/prefs.js:559
+msgid ""
+"Inputs are switched by the monmux command-line tool, which is installed "
+"separately and decides on its own what may be written to which monitor."
+msgstr ""
+"Gli ingressi vengono cambiati dallo strumento a riga di comando monmux, "
+"installato separatamente, che decide in autonomia cosa può essere scritto su "
+"quale monitor."
+
+#: src/prefs.js:564
+msgid "Open"
+msgstr "Apri"
+
+#: src/prefs.js:569
+msgid "Project page"
+msgstr "Pagina del progetto"
+
+#: src/prefs.js:593
+msgid "monmux doctor was stopped before it finished."
+msgstr "monmux doctor è stato interrotto prima di terminare."
+
+#. Translators: {status} is a process exit status, such as 1.
+#: src/prefs.js:596
+msgid "monmux doctor exited with status {status}."
+msgstr "monmux doctor è terminato con stato {status}."

@@ -30,10 +30,11 @@ Shipped:
 - four [keyboard shortcut](#keyboard-shortcuts) slots, each switching to one input
 - a preferences window with the shortcuts and serial targeting, and a Diagnostics page that runs `monmux doctor` and shows the
   installed version and where it was found
+- an Italian translation, a first draft awaiting review
 
 Planned:
 
-- translations
+- publication on extensions.gnome.org
 
 There is no "current input" marker anywhere, and there will not be one: `monmux` never asks a monitor which input it is on, so
 the extension has nothing truthful to show.
@@ -86,6 +87,9 @@ gsettings --schemadir "$SCHEMAS" set org.gnome.shell.extensions.monmux shortcut-
   in front of them switched it and wrote down what happened.
 
 ## Install from source
+
+Building needs `gettext`, which compiles the translations into the zip: `sudo apt install gettext` on Debian or Ubuntu,
+`sudo dnf install gettext` on Fedora.
 
 ```sh
 git clone https://github.com/leinardi/gnome-shell-extension-monmux.git

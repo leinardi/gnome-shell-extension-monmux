@@ -1,0 +1,3 @@
+# One language code per line. A language listed here needs po/<code>.po, and
+# `make ext-pot-check` fails when either is missing without the other.
+it

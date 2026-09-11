@@ -19,7 +19,6 @@ DIST_DIR  ?= dist
 EXT_ZIP   := $(DIST_DIR)/$(EXT_UUID).shell-extension.zip
 EXT_INSTALL_DIR := $(or $(XDG_DATA_HOME),$(HOME)/.local/share)/gnome-shell/extensions/$(EXT_UUID)
 PO_DIR    ?= po
-POT_FILE  := $(PO_DIR)/gnome-shell-extension-monmux.pot
 
 .PHONY: ext-deps
 ext-deps: ## Install the node toolchain from package-lock.json
@@ -45,16 +44,16 @@ ext-test: ## Run the gjs test suite against the fake monmux
 ext-schemas: ## Compile the GSettings schema
 	@glib-compile-schemas --strict $(EXT_SRC)/schemas
 
+# The xgettext arguments live in scripts/check-pot.js alone, so the template
+# `make ext-pot` writes and the one `make ext-pot-check` compares against are
+# extracted the same way. Both need gettext installed.
 .PHONY: ext-pot
-ext-pot: ## Regenerate the translation template
-	@mkdir -p $(PO_DIR)
-	@xgettext --from-code=UTF-8 \
-	  --add-comments=Translators \
-	  --keyword=_ --keyword=C_:1c,2 --keyword=N_ --keyword=ngettext:1,2 \
-	  --package-name=gnome-shell-extension-monmux \
-	  --copyright-holder="Roberto Leinardi" \
-	  --output=$(POT_FILE) \
-	  $$(find $(EXT_SRC) -name '*.js' | sort)
+ext-pot: ## Regenerate the translation template and merge it into every translation
+	@node scripts/check-pot.js --write
+
+.PHONY: ext-pot-check
+ext-pot-check: ## Fail when the translation template or a translation lags behind src/
+	@node scripts/check-pot.js
 
 # The zip carries schemas/*.gschema.xml and no schemas/gschemas.compiled, and
 # that is correct: `gnome-extensions pack` never puts one in — not even with
@@ -114,6 +113,6 @@ ext-logs: ## Follow the GNOME Shell log
 	@journalctl -f -o cat /usr/bin/gnome-shell
 
 .PHONY: verify
-verify: ext-lint ext-typecheck ext-test ext-schemas ext-pack ## Everything CI runs, in one target
+verify: ext-lint ext-typecheck ext-test ext-pot-check ext-schemas ext-pack ## Everything CI runs, in one target
 
 endif  # MK_LOCAL_EXTENSION_INCLUDED
