@@ -27,10 +27,11 @@ Shipped:
 - a refresh on menu open and on monitor hotplug
 - a dry-run switch in the menu, which has `monmux` print the command instead of running it
 - [serial targeting](#serial-targeting) for more than one supported monitor, off by default and not hardware-verified
+- four [keyboard shortcut](#keyboard-shortcuts) slots, each switching to one input, set with `gsettings` for now
 
 Planned:
 
-- a preferences window with a diagnostics page (`monmux doctor`) and per-display keyboard shortcuts
+- a preferences window with a diagnostics page (`monmux doctor`) and a page to set the shortcuts
 - translations
 
 There is no "current input" marker anywhere, and there will not be one: `monmux` never asks a monitor which input it is on, so
@@ -54,6 +55,26 @@ serial numbers with `monmux info --show-serial`, so that a click is pinned to th
 
 **Not hardware-verified.** It has only been exercised against the fake `monmux`, and it stays marked that way until somebody
 with two supported monitors has tried it.
+
+## Keyboard shortcuts
+
+There are four slots, each a shortcut and the input it switches to. Until the preferences window has a page for them, set them
+with `gsettings`, pointing it at the schema the extension installed:
+
+```sh
+SCHEMAS=~/.local/share/gnome-shell/extensions/monmux@leinardi.github.io/schemas
+gsettings --schemadir "$SCHEMAS" set org.gnome.shell.extensions.monmux shortcut-1 "['<Super><Alt>1']"
+gsettings --schemadir "$SCHEMAS" set org.gnome.shell.extensions.monmux shortcut-1-input 'dp'
+```
+
+- The input is named the way `monmux` names it, such as `dp`. Which display it belongs to is `monmux`'s decision, as for a
+  click in the menu.
+- A shortcut goes the way a click goes: **Dry run** applies to it, it is ignored while another switch runs, and its
+  notification says the same things.
+- A shortcut names an input, not a display, so serial targeting never pins it. With two or more supported monitors attached,
+  `monmux` refuses it with `multiple-candidates`, unless a `serial:` pin in its configuration file picks one.
+- A slot with a shortcut and no input, or with a value that is not an input name, starts nothing and says so.
+- Shortcuts work on the desktop, not in the overview or on the lock screen.
 
 ## Requirements
 

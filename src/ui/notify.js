@@ -42,17 +42,20 @@ import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
 
 import {installMonmux, reportProblem, troubleshooting} from '../lib/links.js';
 import {ResultKind} from '../lib/monmux.js';
+import {SlotTargetKind} from '../lib/shortcuts.js';
 import {excerpt, openLink} from './common.js';
 
 /**
  * The refusal a click gets when several supported monitors are attached and it
- * was not pinned to one. While serial targeting is off, its notification names
- * the preference that pins it.
+ * was not pinned to one. While serial targeting is off, the notification for a
+ * click in the menu names the preference that pins it.
  */
 const MULTIPLE_CANDIDATES = 'multiple-candidates';
 
 /** @typedef {import('../lib/monmux.js').Result} Result */
 /** @typedef {import('../lib/reasons.js').Reasons} Reasons */
+/** @typedef {import('../lib/shortcuts.js').Slot} Slot */
+/** @typedef {import('../lib/shortcuts.js').SlotTarget} SlotTarget */
 
 /**
  * @typedef {object} Action
@@ -94,13 +97,17 @@ export class Notifier {
      * @param {?Result} result The client's result, or null when the run was
      *   cancelled - in which case whoever cancelled it is gone and nothing is
      *   posted.
+     * @param {object} [options] Options.
+     * @param {boolean} [options.fromMenu] Whether the switch was a click in the
+     *   menu, which serial targeting can pin, rather than a shortcut, which it
+     *   never does.
      * @returns {void}
      */
-    notify(result) {
+    notify(result, {fromMenu = true} = {}) {
         if (result === null)
             return;
 
-        this._post(this._compose(result));
+        this._post(this._compose(result, fromMenu));
     }
 
     /**
@@ -122,6 +129,31 @@ export class Notifier {
                 this._reasons.label('run-failed'),
                 this._reasons.label('write-status-unknown'),
                 excerpt(String(error))),
+            actions: [],
+        });
+    }
+
+    /**
+     * Tell the user that a shortcut was pressed and monmux was not started,
+     * because its slot names no input that could be handed to it.
+     *
+     * Not a refusal, and it does not say that nothing was written: monmux never
+     * ran, so there is no answer of its to report, only that it was not run.
+     *
+     * @param {Slot} slot The slot whose shortcut was pressed.
+     * @param {SlotTarget} target What its input key holds: empty, or not an
+     *   input name.
+     * @returns {void}
+     */
+    notifySlot(slot, target) {
+        const invalid = target.kind === SlotTargetKind.INVALID;
+
+        this._post({
+            title: this._reasons.label(invalid ? 'shortcut-invalid-input' : 'shortcut-no-input',
+                {slot: String(slot.number)}),
+            body: lines(
+                invalid ? excerpt(target.input ?? '') : null,
+                this._reasons.label('shortcut-nothing-run')),
             actions: [],
         });
     }
@@ -185,9 +217,10 @@ export class Notifier {
      * document with an error or a non-empty stderr.
      *
      * @param {Result} result The result.
+     * @param {boolean} fromMenu Whether the switch was a click in the menu.
      * @returns {Message} The notification's content.
      */
-    _compose(result) {
+    _compose(result, fromMenu) {
         const reasons = this._reasons;
         const doc = result.doc ?? {};
 
@@ -218,10 +251,12 @@ export class Notifier {
                 body: lines(
                     reasons.text(reason),
                     detail === null ? null : excerpt(detail),
-                    // Only while the preference is off: with it on, the click
-                    // went unpinned because no serial was read for its display,
-                    // and turning the preference on again would change nothing.
-                    reason === MULTIPLE_CANDIDATES && !this._serialTargeting()
+                    // Only for a click in the menu, and only while the
+                    // preference is off. A shortcut names no display, so the
+                    // preference cannot pin it; and with the preference on, the
+                    // click went unpinned because no serial was read for its
+                    // display, which turning it on again would not change.
+                    reason === MULTIPLE_CANDIDATES && fromMenu && !this._serialTargeting()
                         ? reasons.label('serial-targeting-hint')
                         : null,
                     reasons.label('nothing-written')),

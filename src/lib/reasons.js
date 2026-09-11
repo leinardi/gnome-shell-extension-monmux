@@ -316,6 +316,13 @@ const LABEL_ENTRIES = {
     // Translators: "Serial targeting" is the name of the switch on the General
     // page of the extension's preferences.
     'serial-targeting-hint': _ => _('To pick one of them from the menu, turn on Serial targeting in the preferences.'),
+    // Translators: {slot} is the number of a keyboard shortcut slot, such as 1.
+    'shortcut-no-input': _ => _('Shortcut {slot} has no input to switch to'),
+    // Translators: {slot} is the number of a keyboard shortcut slot, such as 1.
+    'shortcut-invalid-input': _ => _('Shortcut {slot} is not set to an input name'),
+    // Translators: said when a shortcut was pressed and the extension did not
+    // start monmux at all, so nothing could have been sent to a monitor.
+    'shortcut-nothing-run': _ => _('monmux was not run.'),
 };
 
 /**

@@ -19,6 +19,8 @@
 
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
+import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
@@ -27,13 +29,14 @@ import {buildModel, needsReports} from './lib/model.js';
 import {Monmux, locate, spawn} from './lib/monmux.js';
 import {Reasons} from './lib/reasons.js';
 import {noSerials, readSerials, serialFor, unreadable} from './lib/serials.js';
+import {SLOTS, SlotTargetKind, slotTarget} from './lib/shortcuts.js';
 import {MonmuxIndicator} from './ui/indicator.js';
 import {Notifier} from './ui/notify.js';
 
 /** @typedef {import('./lib/model.js').DisplayModel} DisplayModel */
-/** @typedef {import('./lib/model.js').InputModel} InputModel */
 /** @typedef {import('./lib/model.js').Model} Model */
 /** @typedef {import('./lib/serials.js').Serials} Serials */
+/** @typedef {import('./lib/shortcuts.js').Slot} Slot */
 
 /**
  * How long monitor changes have to stop arriving before the displays are read
@@ -54,7 +57,8 @@ const SERIAL_TARGETING_KEY = 'serial-targeting';
  * src/ui. This file decides only when things run, and it holds three rules.
  *
  * Switches are serialised. While one runs, the inputs are insensitive and a
- * click on one is ignored, so no two monmux processes ever write at once.
+ * click on one, or a shortcut, is ignored, so no two monmux processes ever write
+ * at once.
  *
  * Reads never overlap a write, because a write may be changing the very display
  * list a read reports. A refresh started while a switch runs waits for it; a
@@ -130,6 +134,14 @@ export default class MonmuxExtension extends Extension {
          */
         this._serials = null;
 
+        /**
+         * The settings keys of the shortcuts this enable() bound, and only
+         * those: a key the window manager refused to bind is not removed.
+         *
+         * @type {?string[]}
+         */
+        this._keybindings = null;
+
         this._refreshTimeoutId = 0;
         this._monitorsChangedId = 0;
         this._menuOpenId = 0;
@@ -145,7 +157,7 @@ export default class MonmuxExtension extends Extension {
             extension: this,
             settings,
             reasons,
-            onSwitch: (display, input) => this._switch(display, input),
+            onSwitch: (display, input) => this._switch(input.name, display),
         });
 
         this._settings = settings;
@@ -153,6 +165,7 @@ export default class MonmuxExtension extends Extension {
         this._notifier = new Notifier(reasons, () => settings.get_boolean(SERIAL_TARGETING_KEY));
         this._cancellables = new Set();
         this._serials = new Map();
+        this._keybindings = [];
         this._indicator = indicator;
 
         Main.panel.addToStatusArea(this.uuid, indicator.button);
@@ -169,7 +182,7 @@ export default class MonmuxExtension extends Extension {
 
         // Turning targeting on reads the serials straight away, so that they are
         // there for the first click after it: that click usually lands during
-        // the refresh its menu-open starts, and is pinned with what was read
+        // the refresh its menu-open started, and is pinned with what was read
         // before. Turning it off forgets them straight away too.
         this._serialTargetingChangedId = settings.connect(`changed::${SERIAL_TARGETING_KEY}`, () => {
             if (!settings.get_boolean(SERIAL_TARGETING_KEY))
@@ -177,10 +190,28 @@ export default class MonmuxExtension extends Extension {
 
             this._refresh();
         });
+
+        // One binding per slot, on the desktop only: not in the overview, and
+        // never on the lock screen. The window manager watches each accelerator
+        // key itself, so a shortcut changed in the settings applies at once;
+        // the slot's input is read at the press, for the same reason.
+        for (const slot of SLOTS) {
+            const action = Main.wm.addKeybinding(slot.shortcutKey, settings,
+                Meta.KeyBindingFlags.IGNORE_AUTOREPEAT, Shell.ActionMode.NORMAL,
+                () => this._pressSlot(slot));
+
+            if (action !== Meta.KeyBindingAction.NONE)
+                this._keybindings.push(slot.shortcutKey);
+        }
     }
 
     disable() {
         this._generation++;
+
+        for (const name of this._keybindings ?? [])
+            Main.wm.removeKeybinding(name);
+
+        this._keybindings = null;
 
         for (const cancellable of this._cancellables ?? [])
             cancellable.cancel();
@@ -369,13 +400,44 @@ export default class MonmuxExtension extends Extension {
     }
 
     /**
+     * Run what a shortcut slot names.
+     *
+     * The slot's input is read now rather than when the shortcut was bound, so
+     * that changing it needs no re-enable. A slot that names no input starts
+     * nothing and says so; one that does takes the same path as a click.
+     *
+     * @param {Slot} slot The slot whose shortcut was pressed.
+     * @returns {void}
+     */
+    _pressSlot(slot) {
+        const settings = this._settings;
+        const notifier = this._notifier;
+        if (settings === null || notifier === null)
+            return;
+
+        const target = slotTarget(settings.get_string(slot.inputKey));
+        if (target.kind !== SlotTargetKind.INPUT || target.input === null) {
+            notifier.notifySlot(slot, target);
+            return;
+        }
+
+        this._switch(target.input, null);
+    }
+
+    /**
      * Ask monmux to switch an input, and tell the user what it answered.
      *
-     * @param {DisplayModel} display The display the input was listed under.
-     * @param {InputModel} input The input that was clicked.
+     * The one switch path. A click in the menu and a shortcut both end here, so
+     * both honour the dry-run setting, both are ignored while another switch
+     * runs, and both are told the same things.
+     *
+     * @param {string} input The input's name, as monmux spells it.
+     * @param {?DisplayModel} display The display a click was made under, which
+     *   serial targeting can pin; null for a shortcut, which names an input and
+     *   no display, and so is never pinned.
      * @returns {Promise<void>}
      */
-    async _switch(display, input) {
+    async _switch(input, display) {
         const cancellables = this._cancellables;
         const monmux = this._monmux;
         const notifier = this._notifier;
@@ -384,8 +446,8 @@ export default class MonmuxExtension extends Extension {
             return;
 
         // The indicator already makes the inputs insensitive while a switch
-        // runs. This is the belt to that: a second click never starts a second
-        // process.
+        // runs. This is the belt to that, and the only guard a shortcut has: a
+        // second click or press never starts a second process.
         if (this._switchDone !== null)
             return;
 
@@ -410,15 +472,18 @@ export default class MonmuxExtension extends Extension {
 
             this._indicator?.setSwitching(true);
 
-            // Pinned only while serial targeting is on and monmux would refuse
-            // to pick without it; otherwise, and whenever there is no serial
-            // for this display, the click goes unpinned and monmux decides.
-            const serial = serialFor(display, this._serials, settings.get_boolean(SERIAL_TARGETING_KEY));
+            // Pinned only for a click, while serial targeting is on and monmux
+            // would refuse to pick without it; otherwise, and whenever there is
+            // no serial for this display, the switch goes unpinned and monmux
+            // decides.
+            const serial = display === null
+                ? ''
+                : serialFor(display, this._serials, settings.get_boolean(SERIAL_TARGETING_KEY));
             const dryRun = settings.get_boolean(DRY_RUN_KEY);
-            const result = await monmux.switchInput(input.name, {dryRun, serial}, cancellable);
+            const result = await monmux.switchInput(input, {dryRun, serial}, cancellable);
 
             if (result !== null && generation === this._generation)
-                notifier.notify(result);
+                notifier.notify(result, {fromMenu: display !== null});
         } catch (error) {
             if (generation === this._generation)
                 notifier.notifyError(error);

@@ -155,6 +155,8 @@ Run this before a release, and whenever a change touches the switch path. Nothin
 | 7 | Click an input the catalog does not enable, if the menu offers one | a refusal notification naming the reason, ending in that nothing was written; the monitor does not change |
 | 8 | `gnome-extensions disable monmux@leinardi.github.io` while a switch is in flight | the indicator disappears; `make ext-logs` shows no warning and no message after the disable |
 | 9 | Unplug and replug a monitor with the menu open | the menu updates; no duplicate section, no stale entry |
+| 10 | Set a [shortcut slot](../README.md#keyboard-shortcuts) to an input the catalog enables, turn **Dry run** on, press it | the notification shows the command; nothing on the monitor changes |
+| 11 | Turn **Dry run** off and press the same shortcut | the monitor switches, and the notification is the one a click on that input gets |
 
 Record what happened in the pull request. If a step changed a monitor's input, say which monitor and which input — that is the
 evidence, and for a new model it belongs in a monitor report in the [monmux](https://github.com/leinardi/monmux) repository.

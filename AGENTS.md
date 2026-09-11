@@ -76,6 +76,8 @@ installed from source.
         - `links.js` — the only source of URLs. Nothing else builds one.
         - `serials.js` — the serials a click is pinned with, read from `info --show-serial` only while the user opted in,
           and kept out of the model. Nothing it reads is rendered or logged, a failure included.
+        - `shortcuts.js` — the keyboard shortcut slots: each slot's two settings keys, and whether the input a slot names
+          can be handed to `monmux`. The argv is still built in `monmux.js`.
     - `src/ui/` — the widgets, built from the model and from nothing else. Shell imports belong here and in `extension.js`
       only. No sentence and no URL of its own: every word comes from `reasons.js`, every link from `links.js`. Nothing here
       spawns, and nothing here is unit tested — widgets need a Shell, so they are checked in `make ext-nested`.

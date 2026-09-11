@@ -8,6 +8,10 @@
   The schema has existed since the first commit, keyless, because metadata.json
   names it and the Shell resolves it at load time. Keys are only ever added:
   renaming or retyping one is a migration every installed copy has to go through.
+
+  The shortcut slots are numbered keys rather than one list, because the window
+  manager binds one settings key per shortcut. Four is a first cut: a fifth slot
+  is two more keys here and one more entry in src/lib/shortcuts.js.
 -->
 <schemalist gettext-domain="gnome-shell-extension-monmux">
   <schema id="org.gnome.shell.extensions.monmux" path="/org/gnome/shell/extensions/monmux/">
@@ -20,6 +24,46 @@
       <default>false</default>
       <summary>Serial targeting</summary>
       <description>When more than one supported monitor is attached, read their serial numbers so that a click can target one. Off by default: while it is off, serial numbers are never read.</description>
+    </key>
+    <key name="shortcut-1" type="as">
+      <default>[]</default>
+      <summary>Shortcut 1</summary>
+      <description>The keyboard shortcut that switches to the input named in shortcut-1-input. Empty for none.</description>
+    </key>
+    <key name="shortcut-1-input" type="s">
+      <default>''</default>
+      <summary>Shortcut 1 input</summary>
+      <description>The input shortcut 1 switches to, by the name monmux gives it. Which display that is stays monmux's decision.</description>
+    </key>
+    <key name="shortcut-2" type="as">
+      <default>[]</default>
+      <summary>Shortcut 2</summary>
+      <description>The keyboard shortcut that switches to the input named in shortcut-2-input. Empty for none.</description>
+    </key>
+    <key name="shortcut-2-input" type="s">
+      <default>''</default>
+      <summary>Shortcut 2 input</summary>
+      <description>The input shortcut 2 switches to, by the name monmux gives it. Which display that is stays monmux's decision.</description>
+    </key>
+    <key name="shortcut-3" type="as">
+      <default>[]</default>
+      <summary>Shortcut 3</summary>
+      <description>The keyboard shortcut that switches to the input named in shortcut-3-input. Empty for none.</description>
+    </key>
+    <key name="shortcut-3-input" type="s">
+      <default>''</default>
+      <summary>Shortcut 3 input</summary>
+      <description>The input shortcut 3 switches to, by the name monmux gives it. Which display that is stays monmux's decision.</description>
+    </key>
+    <key name="shortcut-4" type="as">
+      <default>[]</default>
+      <summary>Shortcut 4</summary>
+      <description>The keyboard shortcut that switches to the input named in shortcut-4-input. Empty for none.</description>
+    </key>
+    <key name="shortcut-4-input" type="s">
+      <default>''</default>
+      <summary>Shortcut 4 input</summary>
+      <description>The input shortcut 4 switches to, by the name monmux gives it. Which display that is stays monmux's decision.</description>
     </key>
   </schema>
 </schemalist>
