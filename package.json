@@ -17,14 +17,14 @@
     "test": "PATH=\"$PWD/tests/bin:$PATH\" gjs -m tests/main.js"
   },
   "devDependencies": {
-    "@eslint/config-helpers": "0.4.2",
-    "@eslint/js": "9.39.5",
-    "@girs/gjs": "4.7.0",
+    "@eslint/config-helpers": "0.7.0",
+    "@eslint/js": "10.0.1",
+    "@girs/gjs": "5.2.0",
     "@girs/gnome-shell": "50.0.4",
-    "eslint": "9.39.5",
+    "eslint": "10.10.0",
     "eslint-config-gnome": "git+https://gitlab.gnome.org/World/javascript/eslint-config-gnome.git#c479d059e8d9ea99c3b53c2ea43abf7fdb05eb51",
-    "eslint-plugin-jsdoc": "48.11.0",
+    "eslint-plugin-jsdoc": "64.5.0",
     "globals": "17.12.0",
-    "typescript": "5.9.3"
+    "typescript": "7.0.2"
   }
 }

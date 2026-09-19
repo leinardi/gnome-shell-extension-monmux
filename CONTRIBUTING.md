@@ -7,7 +7,7 @@ typical GNOME extension's for that reason, and one of them is absolute — read
 ## Prerequisites
 
 - GNOME Shell 46 or newer, and a Wayland or X11 session to test in
-- `gjs`, `libglib2.0-bin` (`glib-compile-schemas`) and `gnome-shell` or `gnome-shell-common` (`gnome-extensions`) —
+- `gjs`, `libglib2.0-bin` (`glib-compile-schemas`) and `gnome-shell` (`gnome-extensions`) —
   on Fedora: `gjs`, `glib2-devel`, `gnome-shell`
 - `gettext`: `make ext-pack` compiles the translations with `msgfmt`, and `make ext-pot` and `make ext-pot-check` run
   `xgettext`, `msgmerge` and `msgcmp`
