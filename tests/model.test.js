@@ -32,7 +32,7 @@
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 
-import {EMITTED, InputState, MonmuxState, buildModel, canOffer, needsReports} from '../src/lib/model.js';
+import {EMITTED, InputState, MonmuxState, buildModel, canOffer, needsReports, sameModel} from '../src/lib/model.js';
 import {Monmux} from '../src/lib/monmux.js';
 import {assertDeepEqual, assertEqual, assertThrows, describe, fail, it} from './harness.js';
 
@@ -799,6 +799,37 @@ describe('buildModel rules', () => {
         };
 
         assertEqual(canOffer(shown, input), false);
+    });
+});
+
+describe('sameModel', () => {
+    it('holds for two models built from the same answers', async () => {
+        const [first, second] = await Promise.all([
+            modelOf(SCENARIOS['info-writable']),
+            modelOf(SCENARIOS['info-writable']),
+        ]);
+
+        assertEqual(sameModel(first, second), true);
+    });
+
+    it('does not hold when anything the menu shows differs', async () => {
+        const base = await modelOf(SCENARIOS['info-writable']);
+        const variants = await Promise.all([
+            modelOf({info: reporting(display({label: 'card1-DP-2'}))}),
+            modelOf({info: reporting(display({enabledInputs: ['dp']}))}),
+        ]);
+        variants.push({...base, problems: [...base.problems, {reasonCode: 'serials-unreadable', detail: null}]});
+
+        for (const [index, variant] of variants.entries())
+            assertEqual(sameModel(base, variant), false, String(index));
+    });
+
+    it('does not hold against no model', async () => {
+        const model = await modelOf(SCENARIOS['info-writable']);
+
+        assertEqual(sameModel(model, null), false, 'second');
+        assertEqual(sameModel(null, model), false, 'first');
+        assertEqual(sameModel(null, null), false, 'neither');
     });
 });
 

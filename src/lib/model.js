@@ -282,6 +282,20 @@ export function canOffer(display, input) {
 }
 
 /**
+ * Whether two models would render the same menu.
+ *
+ * A model is plain data whose fields are always written in the same order, so
+ * comparing the serialised form is exact.
+ *
+ * @param {?Model} a A model, or null.
+ * @param {?Model} b Another model, or null.
+ * @returns {boolean} Whether both exist and are equal.
+ */
+export function sameModel(a, b) {
+    return a !== null && b !== null && JSON.stringify(a) === JSON.stringify(b);
+}
+
+/**
  * The model of a monmux that cannot be used.
  *
  * Nothing it reported past the version is read: a binary too old for the

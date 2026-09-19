@@ -203,7 +203,7 @@ done
 | # | Step | Expected |
 | --- | --- | --- |
 | 6 | `make ext-pack && make ext-install`, log out and back in, then `gnome-extensions enable monmux@leinardi.github.io` | the indicator appears in the panel |
-| 7 | Open the menu | one section per attached display, with its connector and model; the inputs the catalog enables are clickable, the rest greyed with a reason; the footer shows the version from step 1 |
+| 7 | Open the menu, keep the pointer on an input until the menu has finished reading, then press <kbd>Escape</kbd> | one section per attached display, with its connector and model; the inputs the catalog enables are clickable, the rest greyed with a reason; the footer shows the version from step 1; nothing "has been already disposed" in `make ext-logs` |
 | 8 | Turn **Dry run** on in the menu, and click **DisplayPort** | a **Dry run** notification with the same command as step 3; nothing on the monitor changes |
 | 9 | Turn **Dry run** off, and click **DisplayPort** | the monitor switches; the notification is **Input-switch command sent**, and does not claim the monitor changed |
 | 10 | With the menu open, unplug a monitor, wait two seconds, and plug it back in | the menu follows each change; no duplicate section, no stale entry |
