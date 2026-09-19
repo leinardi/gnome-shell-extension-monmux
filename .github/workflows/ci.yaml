@@ -34,14 +34,15 @@ jobs:
           cache: npm
 
       # gjs runs the test suite; libglib2.0-bin provides glib-compile-schemas;
-      # gnome-shell-common provides `gnome-extensions`, which packs the zip;
+      # gnome-shell provides `gnome-extensions`, which packs the zip - not
+      # gnome-shell-common, which carries only data files and no binary;
       # unzip is what scripts/check-bundle.js reads the packed zip with; gettext
       # provides xgettext, msgcmp and msgfmt, which the template check runs and
       # `gnome-extensions pack --podir` compiles the translations with.
       - name: Install the GNOME toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y gjs libglib2.0-bin gnome-shell-common unzip gettext
+          sudo apt-get install --no-install-recommends -y gjs libglib2.0-bin gnome-shell unzip gettext
 
       - name: Install the node toolchain
         run: npm ci
