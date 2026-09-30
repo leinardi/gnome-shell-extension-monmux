@@ -103,9 +103,25 @@ JavaScript. A few that come up constantly:
 ## Branches, commits and pull requests
 
 - Branch names: `feat/<short-description>`, `fix/<short-description>`, `chore/<short-description>`.
-- Commit messages start with a conventional-commit type — `feat:`, `fix:`, `docs:`, `chore:`, `test:`, `refactor:`, `ci:` —
-  followed by a short imperative subject. A scope is optional. The `conventional-pre-commit` hook checks this at commit time
-  (`make pre-commit-install` wires up the `commit-msg` stage), and a CI job checks every commit in a pull request.
+- Commit messages follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) **with a scope**:
+  `<type>(<scope>)[!]: <description>`, e.g. `fix(menu): refresh the items after a switch`. The `conventional-pre-commit` hook
+  checks this at commit time (`make pre-commit-install` wires up the `commit-msg` stage), and the `conventional-commits` CI job
+  checks every commit in a pull request. Release notes are not built from these messages: the release lists the merged pull
+  requests by title.
+- The release version is derived from these types since the last release, so a wrong type ships a wrong version:
+
+  | Release | Commit | Example |
+  | --- | --- | --- |
+  | major | any type with `!` before the colon, or a `BREAKING CHANGE:` footer | `feat(prefs)!: drop the legacy settings keys` |
+  | minor | `feat` | `feat(menu): show the monitor model` |
+  | patch | `fix` | `fix(menu): refresh the items after a switch` |
+  | none | everything else: `build`, `chore`, `ci`, `docs`, `perf`, `refactor`, `revert`, `style`, `test` | `docs(readme): fix a link` |
+
+  Pick the type by whether the change should ship, not by what kind of change it is: a refactor, a performance change or a
+  revert that changes the packed zip and that users should receive is a `fix`. `svu` matches `feat`/`fix` anywhere in the
+  subject (e.g. `prefix:` counts as `fix:`), so avoid a word ending in `feat` or `fix` directly before a colon in other
+  subjects. Pull requests are merged with merge commits, so every commit counts, not just the pull request title. See
+  [docs/release.md](docs/release.md).
 - Keep pull requests focused: one logical change each.
 - All checks must pass before merge.
 

@@ -56,6 +56,7 @@ installed from source.
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Prerequisites, the workflow, the rule above in prose. |
 | [`docs/architecture.md`](docs/architecture.md) | The model, the client, and the extension's lifecycle. |
 | [`docs/testing.md`](docs/testing.md) | How the no-write rule is enforced, and the human checklist. |
+| [`docs/release.md`](docs/release.md) | How a release is cut and recovered, and the manual extensions.gnome.org upload. |
 | [`SECURITY.md`](SECURITY.md) | What the threat model is and how to report a vulnerability. |
 | [`.agents/skills/gjs-style-guide/SKILL.md`](.agents/skills/gjs-style-guide/SKILL.md) | The GJS rules this repository enforces. |
 | [`.agents/skills/adversarial-review/SKILL.md`](.agents/skills/adversarial-review/SKILL.md) | How a change here is reviewed. |
@@ -178,3 +179,12 @@ Run before considering an edit done:
 | `Makefile`, `.mk/**`, `.github/workflows/**` | `make check` |
 | anything user-visible | `make verify`, and add the string to the phase 2 gettext work if it is new |
 | docs or a skill | `make check`, and read the rendered result |
+
+## Commit messages
+
+All commits MUST be Conventional Commits 1.0.0 **with a scope**: `<type>(<scope>)[!]: <description>`. Enforced by the
+`conventional-pre-commit` `commit-msg` hook (`--force-scope`) and by the `conventional-commits` CI job. The release version is
+derived by `svu` from the commit types since the last tag (`feat` a minor, `fix` a patch, `!` or a `BREAKING CHANGE:` footer a
+major, everything else nothing), so a change that should ship is a `fix` or a `feat` whatever kind of change it is. The bump
+table and the rest of the rules are in [`CONTRIBUTING.md`](CONTRIBUTING.md#branches-commits-and-pull-requests); the release
+itself in [`docs/release.md`](docs/release.md).
