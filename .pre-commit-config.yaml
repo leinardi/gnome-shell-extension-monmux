@@ -47,7 +47,7 @@ repos:
         args: ["-oneline", "-shellcheck", "shellcheck -S error"]
         stages: [manual]
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.23.2
+    rev: v0.23.3
     hooks:
       - id: markdownlint-cli2
         additional_dependencies:
@@ -122,10 +122,9 @@ repos:
         name: "yamllint (parsable output)"
         args: ["--format", "parsable"]
         stages: [manual]
-  # No --force-scope, like monmux: this history writes `docs:` and `ci:` without
-  # one, and CONTRIBUTING.md allows that.
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: v4.4.0
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
+        args: ["--force-scope"]

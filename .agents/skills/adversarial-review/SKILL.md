@@ -80,7 +80,7 @@ changed paths:
 | `src/prefs.js` | `.agents/skills/gjs-style-guide/SKILL.md` | GTK only, no St/Clutter, no `resource:///org/gnome/shell/ui/…`, schema keys that exist |
 | `src/metadata.json`, `src/schemas/**` | `scripts/check-metadata.js` | uuid, shell-version list, settings-schema present in the zip, gettext domain, no `version` key |
 | `tests/**`, `tests/bin/monmux` | `docs/testing.md` | the fake is still the only reachable binary, the PATH guard still runs first, no test spawns anything |
-| `.mk/**`, `Makefile`, `.github/workflows/**` | `docs/testing.md`, `AGENTS.md` | no target or job that can reach the real monmux, `verify` still covers what CI covers |
+| `.mk/**`, `Makefile`, `.github/workflows/**` | `docs/testing.md`, `docs/release.md`, `AGENTS.md` | no target or job that can reach the real monmux, `verify` still covers what CI covers |
 | `README.md`, `CONTRIBUTING.md`, docs | — | claims that match the code, no feature described that phase 2 has not shipped |
 
 No matching document does not mean lighter review. Apply `AGENTS.md`, the
@@ -139,6 +139,15 @@ normally a blocker.
   46 has it.
 - **Every JavaScript file carries the GPL-2.0-or-later header** from
   `.idea/copyright/GPL_2_0_or_later.xml`.
+- **The release ships what CI checked.** `docs/release.md` is the contract:
+  the release workflow's `build` job runs `make verify` on the released commit
+  and attaches exactly the zip `ext-pack` produced. A release path that skips
+  `verify`, packs outside `ext-pack`, or puts a `version` into
+  `src/metadata.json` (extensions.gnome.org assigns it) is a finding.
+- **Workflows stay pinned and least-privilege.** `contents: read` at the top,
+  extra permissions per job with the reason; every action pinned to a full
+  commit SHA with a `# vX.Y.Z` comment; inputs reach shell through `env:`,
+  never `${{ }}` inside `run:`.
 
 ## 4. Adversarial passes
 
