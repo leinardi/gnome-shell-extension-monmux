@@ -9,6 +9,7 @@ config:
   no-inline-html: false
   ul-indent:
     indent: 4
+
   no-duplicate-heading:
     siblings_only: true
 

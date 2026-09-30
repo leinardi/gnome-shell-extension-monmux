@@ -1,5 +1,4 @@
 version: 2
-enable-beta-ecosystems: true # Required for the pre-commit ecosystem
 
 updates:
   - package-ecosystem: "github-actions"
@@ -26,6 +25,8 @@ updates:
         patterns:
           - "*"
 
+  # devDependencies only: the lint and type-check toolchain. None of it is packed into the
+  # extension, so a bump here never ships and stays chore(deps).
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
