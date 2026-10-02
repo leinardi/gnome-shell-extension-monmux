@@ -1,21 +1,21 @@
 ---
 name: gjs-style-guide
 description: >
-  Project-specific GJS and GNOME Shell extension coding rules for
-  gnome-shell-extension-monmux. Apply whenever writing, editing, or reviewing
-  any .js file in this repository — new modules, new files, bug fixes,
-  refactors, test additions. The rules here are enforced by
-  eslint-config-gnome, by `tsc --checkJs` against the @girs types, and by
-  the pre-commit hooks. Violations require manual fixup after the fact, so
-  internalise them up-front instead. Use this skill proactively: consult it
-  before generating JavaScript, not after lint fails.
+  GJS and GNOME Shell extension coding rules for gnome-shell-extension-monmux, as
+  enforced by eslint-config-gnome, tsc --checkJs against the @girs types, and
+  pre-commit. Covers formatting and braces, import groups and layer boundaries
+  (src/lib, src/ui, extension.js, prefs.js), the enable()/disable() lifecycle,
+  async and subprocess rules, gettext through reasons.js, console logging, JSDoc
+  types, Shell 46 API compatibility, and the patterns extensions.gnome.org rejects.
+  Use when writing, editing, or reviewing any .js file in this repository, before
+  generating code rather than after lint fails.
 ---
 
 # GJS Style Guide — gnome-shell-extension-monmux
 
 Rules derived from `eslint.config.js` — which is `eslint-config-gnome`, the rule
 set GNOME Shell itself is linted with, plus this repository's overrides — from
-`tsconfig.json`, and from what reviewers on extensions.gnome.org reject.
+`tsconfig.json`, and from what reviewers on extensions.gnome.org (e.g.o) reject.
 
 ---
 
@@ -37,9 +37,9 @@ set GNOME Shell itself is linted with, plus this repository's overrides — from
 
 ```js
 import {
-    Extension,
+    ExtensionPreferences,
     gettext as _,
-} from 'resource:///org/gnome/shell/extensions/extension.js';
+} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 ```
 
 ---
@@ -59,9 +59,9 @@ if (!this._indicator)
     return;
 
 // Right — a multi-line body keeps its braces
-if (!this._indicator) {
-    this._indicator = new MonmuxIndicator();
-    Main.panel.addToStatusArea(this.uuid, this._indicator);
+if (this._menuOpenId !== 0) {
+    this._indicator?.menu.disconnect(this._menuOpenId);
+    this._menuOpenId = 0;
 }
 ```
 
@@ -74,13 +74,12 @@ if (!this._indicator) {
 Three groups, separated by blank lines:
 
 ```js
-import GObject from 'gi://GObject';          // 1. gi:// — GObject first, then alphabetical
+import Clutter from 'gi://Clutter';                                    // 1. gi://, alphabetical
 import St from 'gi://St';
 
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';   // 2. resource:///
-import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
+import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';   // 2. resource:///
 
-import {outcomeForExitCode} from './lib/exitCode.js';             // 3. this repository
+import {installMonmux} from '../lib/links.js';                         // 3. this repository
 ```
 
 - Always the `.js` extension on a local import. GJS resolves no extensions.
@@ -97,14 +96,19 @@ import {outcomeForExitCode} from './lib/exitCode.js';             // 3. this rep
 
 ## 4. Classes and GObject
 
-Widgets are registered, and the body is not indented — the linter has an
-explicit exemption for this shape because it is meant to become a decorator:
+Prefer composition over subclassing a Shell widget: `MonmuxIndicator`
+(`src/ui/indicator.js`) is a plain class that owns a `PanelMenu.Button` in
+`this.button` rather than subclassing it, which keeps the type-checker away from
+GObject's `_init`. Copy that shape.
+
+When a GObject subclass is genuinely needed, register it, and do not indent the
+body — the linter has an explicit exemption for this shape:
 
 ```js
-const MonmuxIndicator = GObject.registerClass(
-class MonmuxIndicator extends PanelMenu.Button {
-    _init() {
-        super._init(0.5, 'monmux');
+const FooBox = GObject.registerClass(
+class FooBox extends St.BoxLayout {
+    _init(params) {
+        super._init(params);
         // …
     }
 });
@@ -124,14 +128,14 @@ class MonmuxIndicator extends PanelMenu.Button {
 
 ## 5. The extension lifecycle
 
-This is what e.g.o reviewers reject extensions over, and it is invariant 4 in
-`AGENTS.md`.
+This is what e.g.o reviewers reject extensions over, and it is the `AGENTS.md`
+invariant "Everything created in `enable()` dies in `disable()`".
 
 ```js
 export default class MonmuxExtension extends Extension {
     enable() {
-        this._indicator = new MonmuxIndicator();
-        Main.panel.addToStatusArea(this.uuid, this._indicator);
+        this._indicator = new MonmuxIndicator({/* … */});
+        Main.panel.addToStatusArea(this.uuid, this._indicator.button);
     }
 
     disable() {
@@ -141,9 +145,10 @@ export default class MonmuxExtension extends Extension {
 }
 ```
 
-- **Nothing in a constructor.** The Shell builds the extension object once and
-  keeps it across enable/disable cycles. Anything a constructor creates survives
-  a `disable()` and leaks into the next `enable()`.
+- **Nothing created in a constructor.** The Shell builds the extension object
+  once and keeps it across enable/disable cycles. A constructor only declares
+  fields (`null`, `0`); anything it creates survives a `disable()` and leaks into
+  the next `enable()`.
 - Everything `enable()` creates, `disable()` destroys: widgets (`destroy()`),
   signal handlers (`disconnect(id)`), `GLib` sources (`GLib.Source.remove(id)`),
   notification sources, and any in-flight subprocess (`cancellable.cancel()`).
@@ -159,12 +164,9 @@ export default class MonmuxExtension extends Extension {
 - **Never block the Shell's main loop.** No `Gio.Subprocess.communicate_utf8()`,
   no `GLib.spawn_sync`, no synchronous file read on a path that might be slow.
   Every frame the Shell misses is visible.
-- Promisify once, at module scope, before any call:
-
-  ```js
-  Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async');
-  ```
-
+- **Never `Gio._promisify`.** It patches a shared prototype for every extension
+  in the process, at import time. Wrap the `_async`/`_finish` pair in a local
+  `Promise`, as `communicate()` in `src/lib/monmux.js` does.
 - Every async call that outlives a menu takes a `Gio.Cancellable`, and
   `disable()` cancels it. A callback that fires after `disable()` and touches a
   destroyed widget crashes the Shell.
@@ -177,17 +179,18 @@ export default class MonmuxExtension extends Extension {
 
 ## 7. Subprocesses
 
-Only `src/lib/monmux.js` spawns anything (`AGENTS.md`, invariant 2):
+Only `src/lib/monmux.js` spawns anything (`AGENTS.md` invariant "One
+subprocess, one way"):
 
 ```js
 const proc = Gio.Subprocess.new(
-    ['monmux', 'info', '--json'],
+    [PROGRAM, ...argv],
     Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE);
 ```
 
 - An **argv array**, always. Never a shell string, never a command assembled by
   concatenation, never `/bin/sh -c`.
-- `'monmux'` unqualified, resolved from `PATH`. Never an absolute path, and
+- `PROGRAM` is `'monmux'`, unqualified, resolved from `PATH`. Never an absolute path, and
   never a path from a setting: a configurable binary path turns a menu into a
   way to run an arbitrary program.
 - Read the exit code through `src/lib/exitCode.js`. Nothing else interprets a
@@ -197,30 +200,32 @@ const proc = Gio.Subprocess.new(
 
 ## 8. Strings and gettext
 
-Every user-visible string:
-
-```js
-import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
-// in prefs.js:
-import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
-
-const label = _('Switch to DisplayPort');
-```
-
-- `_()` for a plain string, `ngettext()` for a count, `C_()` when the same word
-  needs two translations in two contexts.
-- `prefer-template` is on: build with a template literal, never with `+`.
+- **Extension-side text comes only from `src/lib/reasons.js`.** `extension.js`
+  builds it with the extension's own gettext
+  (`new Reasons(message => this.gettext(message))`) and hands it to `src/ui/`,
+  which has no sentences of its own. `reasons.js` takes gettext as a parameter
+  rather than importing it, so it stays loadable under plain `gjs`.
+- **`prefs.js` imports `gettext as _`** from
+  `resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js`.
+- The argument to `_()` is a plain string literal: `scripts/check-pot.js` runs
+  xgettext with `--keyword=_` only, so a template literal, a variable,
+  `ngettext()` or `C_()` is never extracted.
+- Placeholders are named (`{version}`), filled after translation, and explained
+  to translators in a `// Translators:` comment directly above the entry.
+- Outside a translatable string, `prefer-template` is on: build with a template
+  literal, never with `+`.
 - Do not wrap a string that no user sees — a log line, a D-Bus name, a `PATH`
-  entry. Translating those is noise for the translator and a bug waiting for the
-  first locale that renders one differently.
+  entry.
+- After changing a user-visible string, run `make ext-pot` and commit what it
+  changed in `po/`; `make ext-pot-check` fails otherwise.
 
 ---
 
 ## 9. Logging
 
 - `console.log()`, `console.warn()`, `console.error()` — never `log()`,
-  `logError()` or `printerr()` in extension code. GJS 1.73 made the console
-  object the supported path, and the old ones are what a reviewer greps for.
+  `logError()` or `printerr()` in extension code; the old ones are what a
+  reviewer greps for.
 - Prefix nothing by hand: the Shell already attributes the message to the
   extension.
 - Never log a serial, a serial string, EDID hex or a display UUID — the journal
@@ -237,12 +242,10 @@ mode against `@girs/gnome-shell`, **pinned to 50**.
 - Every exported function needs a JSDoc block with `@param` and `@returns`
   types (`jsdoc/require-jsdoc`, `publicOnly: {esm: true}`). Without the types,
   `strict` reads the parameters as implicit `any` and fails.
-- **The type-checker does not tell you whether an API exists in Shell 46.** The
-  46 types are a 2024 generation of `@girs` that does not install alongside the
-  current `@girs` core packages — `AGENTS.md` has the detail. Before using a
-  Shell or GTK API, read its "since" version in the GNOME documentation
-  yourself; `shell-version` in `metadata.json` promises 46 and nothing checks
-  that promise mechanically.
+- **`make ext-typecheck` does not prove an API exists in Shell 46**: the types
+  are pinned to 50 (`AGENTS.md`, "Style"). Before using a Shell, GTK or Adwaita
+  API, check its "since" version in the GNOME documentation; `shell-version` in
+  `metadata.json` promises 46 and nothing checks that promise mechanically.
 - `@ts-expect-error` needs a comment saying why, and it is the last resort.
 
 ---
@@ -261,13 +264,24 @@ mode against `@girs/gnome-shell`, **pinned to 50**.
 
 ---
 
-## 12. Comments
+## 12. File header and comments
 
-- Explain **why**, not what. A comment that restates the line above it is noise;
-  a comment explaining why a check exists is the reason nobody deletes it in six
-  months.
+- Every `.js` file under `src/`, `tests/` and `scripts/` starts with the GPL
+  header from `.idea/copyright/GPL_2_0_or_later.xml`; copy it from any existing
+  file.
+- Comments explain **why**, not what.
 - `spaced-comment` is on: `// text`, not `//text`.
 - No `FIXME` in committed code. `TODO` is allowed when it names what and when.
+
+---
+
+## Lint loop
+
+1. `make ext-lint-fix` to apply the automatic fixes.
+2. `make ext-lint ext-typecheck ext-test`; fix every finding and re-run until
+   clean.
+3. If a user-visible string changed: `make ext-pot`, then `make ext-pot-check`.
+4. `git status` — check what the fixers and `make ext-pot` rewrote.
 
 ---
 
@@ -281,8 +295,9 @@ mode against `@girs/gnome-shell`, **pinned to 50**.
 - [ ] No synchronous subprocess, no synchronous I/O on the main loop
 - [ ] Any new spawn lives in `src/lib/monmux.js`, argv array, `monmux` from `PATH`
 - [ ] `src/lib/**` imports nothing from the Shell
-- [ ] Every user-visible string in `_()`
+- [ ] Every extension-side sentence comes from `reasons.js`; prefs strings in `_()`; `po/` regenerated
 - [ ] `console.*`, never `log()`; nothing logged that `monmux` redacts
 - [ ] JSDoc with types on every export; `make ext-typecheck` clean
 - [ ] Any Shell, GTK or Adwaita API new to this repository checked against its "since" version — the types are pinned to 50 and prove nothing about 46
 - [ ] GPL header at the top of the file
+- [ ] No `Gio._promisify`; a Shell widget is owned, not subclassed

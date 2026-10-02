@@ -8,9 +8,9 @@ description: >
   and never destroyed in disable(), leaked signal ids and GLib sources,
   main-loop blocking, serial leaks into the journal, St or Clutter reaching
   prefs.js, and tests that could execute the real monmux, then reports ranked
-  findings. Use whenever the user asks to review changes, a diff, PR, branch,
-  or commit; check work before committing; assess merge readiness; or poke
-  holes in an implementation.
+  findings. Use when the user asks to review changes, a diff, PR, branch, or
+  commit; check work before committing; assess merge readiness; or poke holes
+  in an implementation.
 ---
 
 # Adversarial Review — monmux GNOME Shell extension
@@ -25,6 +25,19 @@ credible only after active attempts to break the changed behaviour.
 This skill is the entry point for reviewing any change in this repository.
 `AGENTS.md` and the project documentation remain the sources of truth; this
 skill defines review procedure and reporting.
+
+Copy this checklist and tick items as you go:
+
+```text
+Review progress:
+- [ ] 0. No-write rule acknowledged; only read-only commands from here on
+- [ ] 1. Diff and stated intent read; every changed file read with its context
+- [ ] 2. AGENTS.md and the documents for the changed paths loaded
+- [ ] 3. Repository invariants checked
+- [ ] 4. Adversarial passes run
+- [ ] 5. Gates run, or marked unverified; hardware checks written for the human
+- [ ] 6. Report written: ranked findings, verdict, gates run
+```
 
 ## 0. The hard rule, during review too
 
@@ -48,7 +61,8 @@ enforced rules live there, not in your habits.
 ## 1. Establish the diff
 
 Never review from memory or only from the user's description. Read the actual
-diff and determine its intent.
+diff and determine its intent. With no scope given, review the uncommitted work;
+if the tree is clean, review the branch against `main`.
 
 | User intent | Command |
 | --- | --- |
@@ -73,70 +87,60 @@ changed paths:
 
 | Changed area | Read | Review focus |
 | --- | --- | --- |
-| `src/lib/monmux.js` and any new subprocess | `AGENTS.md` invariants 2 and 3 | argv array, `monmux` from `PATH`, async only, cancellable, exit-code mapping, stderr handling, malformed JSON |
-| `src/lib/exitCode.js` | `AGENTS.md` invariant 3 | 0/1/2 mapped exactly, undocumented codes never become a refusal, no code claims "nothing was written" that monmux did not promise |
+| `src/lib/monmux.js` and any new subprocess | `AGENTS.md` invariants "One subprocess, one way" and "Exit codes are mapped exactly" | argv array, `monmux` from `PATH`, async only, cancellable, exit-code mapping, stderr handling, malformed JSON |
+| `src/lib/exitCode.js` | `AGENTS.md` invariant "Exit codes are mapped exactly" | 0/1/2 mapped exactly, undocumented codes never become a refusal, no code claims "nothing was written" that monmux did not promise |
+| `src/lib/serials.js` | `AGENTS.md` invariant "No serial is shown unless the user opted in" | `--show-serial` only while the user opted in; nothing it reads is rendered or logged, a failure included; serials stay out of the model |
+| `src/lib/reasons.js`, `src/lib/links.js` | `AGENTS.md` layout notes for both modules | the only sources of user-visible text and of URLs; every string a literal inside `_()`, with a `// Translators:` comment for each placeholder |
 | `src/lib/**` (other) | `.agents/skills/gjs-style-guide/SKILL.md` | purity: no Shell import, no St, no Clutter; testable under plain gjs |
-| `src/extension.js`, any new widget | `AGENTS.md` invariant 4, the e.g.o rules in §3 | enable/disable symmetry, signal ids, GLib sources, nothing in a constructor, no main-loop blocking |
-| `src/prefs.js` | `.agents/skills/gjs-style-guide/SKILL.md` | GTK only, no St/Clutter, no `resource:///org/gnome/shell/ui/…`, schema keys that exist |
+| `src/extension.js` | `AGENTS.md` invariant "Everything created in `enable()` dies in `disable()`", the extensions.gnome.org (e.g.o) rules in §3 | enable/disable symmetry, signal ids, GLib sources, nothing created in a constructor, no main-loop blocking |
+| `src/ui/**` | the same lifecycle invariant, `AGENTS.md` layout notes for `src/ui/` | no sentence or URL of its own, nothing spawns, `indicator.button` added and destroyed through the indicator, every signal id released |
+| `src/prefs.js` | `.agents/skills/gjs-style-guide/SKILL.md` | GTK only, no St/Clutter, no `resource:///org/gnome/shell/ui/…`, `monmux` only through `readOnly(spawn)`, schema keys that exist |
 | `src/metadata.json`, `src/schemas/**` | `scripts/check-metadata.js` | uuid, shell-version list, settings-schema present in the zip, gettext domain, no `version` key |
+| `po/**` | `scripts/check-pot.js` | template and translations regenerated with `make ext-pot`, not edited to hide drift |
 | `tests/**`, `tests/bin/monmux` | `docs/testing.md` | the fake is still the only reachable binary, the PATH guard still runs first, no test spawns anything |
 | `.mk/**`, `Makefile`, `.github/workflows/**` | `docs/testing.md`, `docs/release.md`, `AGENTS.md` | no target or job that can reach the real monmux, `verify` still covers what CI covers |
-| `README.md`, `CONTRIBUTING.md`, docs | — | claims that match the code, no feature described that phase 2 has not shipped |
+| `README.md`, `CONTRIBUTING.md`, docs | — | claims that match the code, no feature described that the code does not implement |
 
 No matching document does not mean lighter review. Apply `AGENTS.md`, the
 invariants below, and the general adversarial passes.
 
 ## 3. Repository invariants
 
-Check these whenever affected, directly or indirectly. Weakening any of them is
-normally a blocker.
+`AGENTS.md` § Invariants is the checklist; read it in full. Weakening any
+invariant is normally a blocker. What to look for while reviewing:
 
-- **The extension re-implements no policy.** Which monitor may be written to and
-  which input is enabled for it are `monmux`'s decisions. A change that infers
-  writability, guesses at a model, retries a refusal, offers a raw VCP code or
-  value, hard-codes a catalog fact, or asks a monitor what input it is on is a
-  blocker. `monmux` never reads the current input; a menu that shows an active
-  marker is showing something nobody measured.
-- **One subprocess, one way.** Only `src/lib/monmux.js` spawns. Argv array,
-  never a shell string; `'monmux'` from `PATH`, never an absolute or
-  user-configurable path; asynchronous, never `communicate_utf8()` or
-  `spawn_sync` on the Shell's main loop. A settings key holding a binary path is
-  a blocker, not a convenience.
-- **Exit codes are mapped exactly.** `0` sent, `2` refused with nothing written,
-  `1` ran and failed with the write status unknown, anything else unexpected.
-  Only a refusal may reach the user as "nothing was written". A path that
-  reports a failure as a refusal is a false promise about hardware and is a
-  blocker.
+- **No policy.** Inferring writability, guessing at a model, retrying a refusal,
+  offering a raw VCP code or value, hard-coding a catalog fact, or showing an
+  "active input" marker (`monmux` never reads the current input, so nobody
+  measured it) is a blocker.
+- **One subprocess, one way.** A settings key holding a binary path is a blocker,
+  not a convenience. So is a second place that spawns.
+- **Exit codes.** A path that reports a failure as a refusal is a false promise
+  about hardware and a blocker.
 - **enable/disable symmetry.** For every object, signal connection, `GLib`
-  timeout or idle source, notification source and `Gio.Cancellable` created in
-  `enable()` or after it, find the line in `disable()` that releases it. A
-  handler id kept in a local, a source id never removed, a subprocess whose
-  callback fires after `disable()` and touches a destroyed widget: all findings,
-  the last one a blocker. Nothing may be created in a constructor.
-- **Redaction survives.** `monmux` redacts serials by default; nothing here may
-  undo that. A `--show-serial` that is not an explicit user action, or any
-  serial, serial string, EDID hex or display UUID reaching `console.*`, is a
+  source, notification source and `Gio.Cancellable` created in `enable()` or
+  after it, find the line in `disable()` that releases it. A handler id kept in a
+  local, a source id never removed, a subprocess whose callback fires after
+  `disable()` and touches a destroyed widget: all findings, the last one a
   blocker.
-- **Layer separation.** No GTK in `extension.js`. No St, Clutter or
-  `resource:///org/gnome/shell/ui/…` in `prefs.js`. Nothing under `src/lib/`
-  imports the Shell — that is what keeps it testable, and an import added there
+- **Redaction.** A `--show-serial` that is not an explicit user action, or any
+  serial, serial string, EDID hex or display UUID reaching `console.*` or a menu
+  label, is a blocker.
+- **Layer separation.** An import added under `src/lib/` that reaches the Shell
   breaks the suite's ability to run at all.
-- **Tests can never reach the real monmux.** The `test` script prepends
-  `tests/bin`, and `tests/main.js` refuses to run unless
-  `GLib.find_program_in_path('monmux')` is the fake. A change that removes the
-  guard, moves it after the first import of a test file, or adds a test that
-  spawns a process is a blocker.
-- **Every user-visible string goes through gettext**, and no log line does.
-- **The e.g.o rules hold**: no side effects at import time (a module that does
-  work when loaded runs it on the lock screen too), no `Lang`, no `Mainloop`,
-  no `ByteArray`, no `imports.` legacy syntax, no minified or generated code in
-  the packed zip, no telemetry, no network access.
-- **`shell-version` means something.** A new API has to exist in Shell 46, or
-  46 comes out of the list deliberately, in the same commit, with the reason
-  written down. Nothing checks this mechanically — the `@girs` types are pinned
-  to 50, for the reason in `AGENTS.md` — so for every Shell, GTK or Adwaita API
-  the diff introduces, look up its "since" version and say in the review whether
-  46 has it.
+- **Tests can never reach the real monmux.** A change that removes the PATH
+  guard in `tests/main.js`, moves it after the first import of a test file, or
+  adds a test that spawns a process is a blocker.
+- **gettext.** Extension-side sentences come only from `reasons.js`; a sentence
+  or URL written in `src/ui/` or `extension.js`, a translated log line, or a
+  string changed without `make ext-pot` is a finding.
+- **The e.g.o rules hold**, plus: no `imports.` legacy syntax, and a module that
+  does work when loaded is a finding (it runs on the lock screen too).
+- **`shell-version` means something.** Nothing checks it mechanically — the
+  `@girs` types are pinned to 50 (`AGENTS.md`, "Style") — so for every Shell,
+  GTK or Adwaita API the diff introduces, look up its "since" version and say in
+  the review whether 46 has it. Otherwise 46 leaves the list deliberately, in
+  the same commit, with the reason written down.
 - **Every JavaScript file carries the GPL-2.0-or-later header** from
   `.idea/copyright/GPL_2_0_or_later.xml`.
 - **The release ships what CI checked.** `docs/release.md` is the contract:
@@ -198,9 +202,14 @@ Do not skim for style. Run each pass with "how can this fail?" framing:
   intent. Flag any undocumented setting, string, shortcut, shell-version change
   or new dependency.
 
-Prefer one reproducible defect over ten vague suggestions. If you cannot name
-the triggering state and the wrong result or broken invariant, keep
-investigating or omit it.
+For every suspected defect, run this loop:
+
+1. Reproduce it with a read-only command, or trace the triggering state through
+   the code to the wrong result.
+2. Confirmed (you can name the state and the wrong result or broken invariant)?
+   Report it.
+3. Not confirmed? Dig once more — read the caller, the test, or the fake's
+   fixture. Still nothing? Drop it.
 
 ## 5. Verify findings and gates
 
@@ -212,8 +221,10 @@ a monitor.
 | Diff touched | Run |
 | --- | --- |
 | `src/lib/**` or `tests/**` | `make ext-lint`, `make ext-typecheck`, `make ext-test` |
-| `src/extension.js`, `src/prefs.js`, `src/stylesheet.css` | `make verify`, then `make ext-nested` and open the menu |
+| `src/extension.js`, `src/ui/**`, `src/prefs.js`, `src/stylesheet.css` | `make verify`, then `make ext-nested` and open the menu |
+| a user-visible string, `po/**` | `make ext-pot-check` (needs gettext) |
 | `src/metadata.json`, `src/schemas/**` | `make ext-schemas`, `make ext-pack`, then `make check-stage` |
+| `scripts/check-*.js` | `make ext-lint`, then the target that runs the script: `make check-stage` (`ext-metadata` hook) for `check-metadata.js`, `make ext-pack` for `check-bundle.js`, `make ext-pot-check` for `check-pot.js` |
 | `package.json`, `eslint.config.js`, `tsconfig.json`, `ambient.d.ts` | `make ext-deps`, then `make verify` |
 | `Makefile`, `.mk/**`, `.pre-commit-config.yaml`, `.github/**` | `make check` |
 | broad change or merge-readiness review | `make verify`, then `make check` |
