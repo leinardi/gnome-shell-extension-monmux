@@ -144,7 +144,9 @@ Do not weaken any of these.
    feature that passes `--show-serial` has to be a deliberate, user-driven action, and its output never goes into a log line.
 6. **Layer separation holds.** No GTK in `extension.js`. No St or Clutter in `prefs.js`. Nothing under `src/lib/` imports the
    Shell, so the suite can run it under plain `gjs`.
-7. **Every user-visible string goes through gettext**, `_()` from the extension's own import, never a bare literal.
+7. **Every user-visible string goes through gettext**, never a bare literal. Extension-side text comes only from
+   `src/lib/reasons.js`, written as `_()` calls and translated through the extension's `this.gettext` that `extension.js`
+   hands it; `prefs.js` imports `gettext as _`.
 8. **The e.g.o review rules are a floor**: no side effects at import time, no `Lang`, no `Mainloop`, no `ByteArray`, no
    minified or generated code in the zip, no telemetry, no network access.
 
@@ -177,7 +179,7 @@ Run before considering an edit done:
 | `src/metadata.json`, `src/schemas/**` | `make ext-schemas`, then `make check-stage` (the `ext-metadata` hook) |
 | `package.json`, `eslint.config.js`, `tsconfig.json` | `make ext-deps`, then `make verify` |
 | `Makefile`, `.mk/**`, `.github/workflows/**` | `make check` |
-| anything user-visible | `make verify`, and add the string to the phase 2 gettext work if it is new |
+| anything user-visible | `make verify`, then `make ext-pot` and commit `po/` if a string is new or changed |
 | docs or a skill | `make check`, and read the rendered result |
 
 ## Commit messages
