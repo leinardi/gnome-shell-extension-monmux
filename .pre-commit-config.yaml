@@ -107,6 +107,24 @@ repos:
         language: system
         pass_filenames: false
         files: ^(src/metadata\.json|package\.json|src/schemas/.*\.gschema\.xml|scripts/check-metadata\.js)$
+      # Every tracked JavaScript, TypeScript, shell and make file carries the GPL-2.0-or-later
+      # header. The check reads the whole tree, so it always runs; pinned to one stage because
+      # always_run makes a hook eligible at every installed stage, and commit-msg is one of them.
+      - id: check-license-headers
+        name: licence headers
+        entry: scripts/check-license-headers.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+      # The check's own test, in a scratch repository: it still fails on each way a header can be
+      # missing or wrong.
+      - id: test-license-headers
+        name: licence header check, tested
+        entry: scripts/test-license-headers.sh
+        language: system
+        pass_filenames: false
+        files: ^scripts/(check|test)-license-headers\.sh$
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.38.0
     hooks:
