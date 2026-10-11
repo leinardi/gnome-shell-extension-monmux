@@ -34,6 +34,9 @@ decisions and takes none of them.
 - [ ] I have executed `make verify` locally and it has run successfully
 - [ ] Every commit message follows [Conventional
   Commits](https://www.conventionalcommits.org/en/v1.0.0/) with a scope (`type(scope): subject`)
+- [ ] Each commit type matches whether the change ships: `fix`/`feat` for a change to the extension
+  zip that users should receive, anything else for CI, tooling, tests or docs (see
+  `CONTRIBUTING.md`)
 - [ ] I have performed a self-review of my own code
 - [ ] There are no `WIP` commits in this PR
 
