@@ -14,9 +14,10 @@ redaction exists to keep out of a public issue.
 
 ## Step 1: Is this the extension, or is it monmux?
 
-This repository is **only** the GNOME Shell extension: the panel indicator, its menu, its notifications, its preferences
-window, and its packaging. Everything about which monitor may be switched, and how, belongs to
-[leinardi/monmux](https://github.com/leinardi/monmux) — the extension takes none of those decisions and cannot change them.
+This repository is **only** the GNOME Shell extension: the panel indicator, its menu, its
+notifications, its preferences window, and its packaging. Everything about which monitor may be
+switched, and how, belongs to [leinardi/monmux](https://github.com/leinardi/monmux) — the extension
+takes none of those decisions and cannot change them.
 
 **The test:** run the same thing in a terminal. If it fails there too, it is a monmux issue.
 
@@ -34,8 +35,8 @@ window, and its packaging. Everything about which monitor may be switched, and h
 | `monmux doctor` reports a failing check — ddcutil, m1ddc, permissions, `/dev/i2c-*` | [monmux](https://github.com/leinardi/monmux/issues/new/choose) |
 | The monitor switched but came back, or switched to the wrong input | [monmux](https://github.com/leinardi/monmux/issues/new/choose) |
 
-* [ ] I have run the equivalent `monmux` command in a terminal, and it behaved **differently** from the extension — or the
-  problem has nothing to do with switching at all.
+* [ ] I have run the equivalent `monmux` command in a terminal, and it behaved **differently** from
+  the extension — or the problem has nothing to do with switching at all.
 * [ ] I have checked that there are no duplicate active or recent issues describing this problem.
 * [ ] I am using the latest release of the extension, or have reproduced this on `main`.
 
@@ -89,7 +90,10 @@ $
 
 ### Observed results
 
-<!-- What happened in the extension? Include the notification text, including the refusal message if there was one. -->
+<!--
+What happened in the extension? Include the notification text, including the refusal message if
+there was one.
+-->
 
 ```text
 ```
@@ -113,6 +117,9 @@ Run this in a terminal, reproduce the problem, then paste the lines it printed:
 
 ### Anything else
 
-<!-- Screenshots of the menu, whether the monitor changed input, what the OSD showed, and anything else that helps. -->
+<!--
+Screenshots of the menu, whether the monitor changed input, what the OSD showed, and anything else
+that helps.
+-->
 
 *
