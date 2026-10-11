@@ -131,8 +131,10 @@ blocker. What to look for while reviewing:
   to 50 (`AGENTS.md`, "Style") — so for every Shell, GTK or Adwaita API the diff introduces, look up
   its "since" version and say in the review whether 46 has it. Otherwise 46 leaves the list
   deliberately, in the same commit, with the reason written down.
-- **Every JavaScript file carries the GPL-2.0-or-later header** from
-  `.idea/copyright/GPL_2_0_or_later.xml`.
+- **Every source file carries the GPL-2.0-or-later header** from
+  `.idea/copyright/GPL_2_0_or_later.xml`: JavaScript, TypeScript, shell, the Makefile and the
+  repo-local `.mk` files, checked by `scripts/check-license-headers.sh`. A header copied from
+  elsewhere, or a GPL-2.0-only or GPL-3.0 grant, is a finding even where the check misses it.
 - **The release ships what CI checked.** `docs/release.md` is the contract: the release workflow's
   `build` job runs `make verify` on the released commit and attaches exactly the zip `ext-pack`
   produced. A release path that skips `verify`, packs outside `ext-pack`, or puts a `version` into
@@ -181,6 +183,23 @@ Do not skim for style. Run each pass with "how can this fail?" framing:
 - **Contract drift:** compare the implementation against `README.md`, `AGENTS.md`,
   `docs/testing.md`, `src/metadata.json` and the commit or PR intent. Flag any undocumented setting,
   string, shortcut, shell-version change or new dependency.
+- **Commit type matches whether it ships:** `svu` derives the release from the commit types since
+  the last tag, and pull requests land as merge commits, so every commit counts. What ships here is
+  the extension zip, `monmux@leinardi.github.io.shell-extension.zip`: exactly what `ext-pack` packs
+  from `src/` and the compiled `po/` catalogs. A change to the zip that users should receive, typed
+  `chore`, `docs`, `refactor`, `perf` or `style`, never ships on its own: a finding. So is a
+  `feat`/`fix` on a change that leaves the zip alone (CI, docs, tests, tooling, `scripts/`), which
+  cuts a release with nothing in it; a stray `!` or `BREAKING CHANGE:` footer, which cuts a major;
+  and a word ending in `feat` or `fix` right before a colon in any subject (`prefix:`), which `svu`
+  counts as `fix`. A `revert` of a shipped `feat` or `fix` is itself a `fix`.
+- **A meta-test that can no longer fail:** `tests/main.js`'s PATH guard, `scripts/check-bundle.js`,
+  `scripts/check-metadata.js`, `scripts/check-pot.js`, `scripts/check-license-headers.sh` and
+  `scripts/test-license-headers.sh` guard claims nothing else checks. Break the guarded thing once
+  (make the PATH guard expect a path other than `tests/bin/monmux`, rather than putting the real
+  binary on the suite's `PATH`; add a stray file to the zip; drop a key from `src/metadata.json`;
+  change a string without `make ext-pot`; strip a header) and see whether the check still fails. A
+  check that passes because its file list is empty, its pattern no longer matches anything, or its
+  loop never ran is a false pass: a finding.
 
 For every suspected defect, run this loop:
 
@@ -203,6 +222,7 @@ and no gate here can reach a monitor.
 | a user-visible string, `po/**` | `make ext-pot-check` (needs gettext) |
 | `src/metadata.json`, `src/schemas/**` | `make ext-schemas`, `make ext-pack`, then `make check-stage` |
 | `scripts/check-*.js` | `make ext-lint`, then the target that runs the script: `make check-stage` (`ext-metadata` hook) for `check-metadata.js`, `make ext-pack` for `check-bundle.js`, `make ext-pot-check` for `check-pot.js` |
+| `scripts/check-license-headers.sh`, `scripts/test-license-headers.sh` | `make ext-license`, and the mutation from the meta-test pass in §4 |
 | `package.json`, `eslint.config.js`, `tsconfig.json`, `ambient.d.ts` | `make ext-deps`, then `make verify` |
 | `Makefile`, `.mk/**`, `.pre-commit-config.yaml`, `.github/**` | `make check` |
 | broad change or merge-readiness review | `make verify`, then `make check` |
