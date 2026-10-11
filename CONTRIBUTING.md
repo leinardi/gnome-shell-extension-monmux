@@ -56,6 +56,7 @@ make ext-pack          # dist/monmux@leinardi.github.io.shell-extension.zip
 make ext-install       # install that zip for this user
 make ext-nested        # a nested Shell that can only see the fake monmux
 make ext-logs          # journalctl -f -o cat /usr/bin/gnome-shell
+make ext-license       # the GPL-2.0-or-later header check, then its own test
 make check             # the full pre-commit suite
 make check-stage       # the same, on staged files only
 ```
@@ -105,7 +106,10 @@ JavaScript. A few that come up constantly:
 
 - Four spaces, single quotes, semicolons, trailing commas in multi-line literals *and* imports.
 - A single-statement `if` body has no braces and goes on the next line.
-- Every JavaScript file starts with the GPL-2.0-or-later header.
+- Every source file starts with the GPL-2.0-or-later header from
+  `.idea/copyright/GPL_2_0_or_later.xml`, with the year of its first commit: JavaScript, TypeScript,
+  shell, the Makefile and the repo-local `.mk` files. The `check-license-headers` hook fails on one
+  without it; [AGENTS.md](AGENTS.md#licence-headers) lists what is governed and what is exempt.
 - Comments explain why, not what. A comment that restates the code is noise; a comment explaining
   why a check exists is the reason somebody will not delete it in six months.
 
@@ -129,11 +133,16 @@ JavaScript. A few that come up constantly:
   | patch | `fix` | `fix(menu): refresh the items after a switch` |
   | none | everything else: `build`, `chore`, `ci`, `docs`, `perf`, `refactor`, `revert`, `style`, `test` | `docs(readme): fix a link` |
 
-  Pick the type by whether the change should ship, not by what kind of change it is: a refactor, a
-  performance change or a revert that changes the packed zip and that users should receive is a
-  `fix`. `svu` matches `feat`/`fix` anywhere in the subject (e.g. `prefix:` counts as `fix:`), so
-  avoid a word ending in `feat` or `fix` directly before a colon in other subjects. Pull requests
-  are merged with merge commits, so every commit counts, not just the pull request title. See
+  The highest bump among the commits wins; with only "none" commits since the last tag, a release
+  with no version fails with "nothing to bump".
+
+  Pick the type by whether the change should ship, not by what kind of change it is. What ships is
+  the extension zip: a refactor, a performance change or a revert that changes the packed zip and
+  that users should receive is a `fix`, and a change to CI, tooling, tests or docs, which leaves the
+  zip alone, is not a `fix` or a `feat`. A `revert` of a shipped `feat` or `fix` is itself a `fix`.
+  `svu` matches `feat`/`fix` anywhere in the subject (e.g. `prefix:` counts as `fix:`), so avoid a
+  word ending in `feat` or `fix` directly before a colon in other subjects. Pull requests are merged
+  with merge commits, so every commit counts, not just the pull request title. See
   [docs/release.md](docs/release.md).
 - Keep pull requests focused: one logical change each.
 - All checks must pass before merge.
