@@ -41,13 +41,15 @@ prepare the commands and wait.
 CI runs no `monmux` command at all, and installs neither `monmux` nor `ddcutil`.
 
 `.claude/settings.json` denies the forbidden commands it can name: `monmux switch`,
-`ddcutil setvcp`, `ddcutil --i2c-source-addr…`, `m1ddc`, `i2cset`, `i2ctransfer`,
-`gnome-extensions enable`, and the two obvious ways to write a `/dev/i2c-*` node. Two things about
-that list. It denies **every** `monmux switch`, `--dry-run` included, because a permission pattern
-matches a prefix and cannot tell one from the other, and erring closed is the whole point of this
-repository — run a dry run yourself with `!` when you need one. And it is defence in depth, not the
-boundary: a deny list cannot enumerate every spelling of a write, so the rule above is the authority
-and a command that is merely *unlisted* is not thereby allowed.
+`ddcutil setvcp` (both also with options before the subcommand), `ddcutil --i2c-source-addr…`,
+`i2cset` and `i2ctransfer`, each with or without `sudo`; `m1ddc`; `gnome-extensions enable`; and the
+two obvious ways to write a `/dev/i2c-*` node: an `Edit` rule on `/dev/i2c-*`, which also covers a
+shell redirect or `tee` into one, and `dd of=/dev/i2c-*`. Two things about that list. It denies
+**every** `monmux switch`, `--dry-run` included, because a permission pattern matches a prefix and
+cannot tell one from the other, and erring closed is the whole point of this repository — run a dry
+run yourself with `!` when you need one. And it is defence in depth, not the boundary: a deny list
+cannot enumerate every spelling of a write, so the rule above is the authority and a command that is
+merely *unlisted* is not thereby allowed.
 
 ## What this is
 
