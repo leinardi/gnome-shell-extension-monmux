@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make check)",
+      "Bash(make check-stage)",
+      "Bash(make verify)",
+      "Bash(make ext-lint)",
+      "Bash(make ext-typecheck)",
+      "Bash(make ext-test)",
+      "Bash(make ext-license)",
+      "Bash(make ext-pot-check)",
+      "Bash(make help)"
+    ],
+    "deny": [
+      "Bash(monmux switch *)",
+      "Bash(monmux * switch *)",
+      "Bash(sudo monmux switch *)",
+      "Bash(sudo monmux * switch *)",
+      "Bash(ddcutil setvcp *)",
+      "Bash(ddcutil * setvcp *)",
+      "Bash(ddcutil *--i2c-source-addr*)",
+      "Bash(sudo ddcutil setvcp *)",
+      "Bash(sudo ddcutil * setvcp *)",
+      "Bash(sudo ddcutil *--i2c-source-addr*)",
+      "Bash(m1ddc *)",
+      "Bash(i2cset *)",
+      "Bash(sudo i2cset *)",
+      "Bash(i2ctransfer *)",
+      "Bash(sudo i2ctransfer *)",
+      "Bash(gnome-extensions enable *)",
+      "Edit(//dev/i2c-*)",
+      "Bash(dd *of=/dev/i2c-*)",
+      "Bash(sudo dd *of=/dev/i2c-*)"
+    ]
+  }
+}

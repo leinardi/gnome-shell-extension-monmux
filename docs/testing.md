@@ -1,22 +1,25 @@
 # Testing
 
-Everything automated in this repository is forbidden from reaching a real monitor, and the enforcement is mechanical rather
-than a matter of remembering. This page says how, and what is left for a human to do by hand.
+Everything automated in this repository is forbidden from reaching a real monitor, and the
+enforcement is mechanical rather than a matter of remembering. This page says how, and what is left
+for a human to do by hand.
 
 ## Why a click is a write
 
-In `monmux` the dangerous act is a command: `monmux switch`. Here it is a click. Opening the panel menu of a build that can
-reach the real binary and picking an input runs exactly that command, with exactly the same consequence for the monitor in
-front of you. So the rule in [AGENTS.md](../AGENTS.md) — *no AI agent writes to a monitor* — covers the menu, the nested Shell
+In `monmux` the dangerous act is a command: `monmux switch`. Here it is a click. Opening the panel
+menu of a build that can reach the real binary and picking an input runs exactly that command, with
+exactly the same consequence for the monitor in front of you. So the rule in
+[AGENTS.md](../AGENTS.md) — *no AI agent writes to a monitor* — covers the menu, the nested Shell
 and `gnome-extensions enable` on a live session, not only the CLI.
 
 ## The fake monmux
 
-`tests/bin/monmux` is an executable shell script that answers from `tests/fixtures/`. It is the only `monmux` any automated
-thing in this repository is allowed to see, and it exists **for the nested Shell**: no test spawns it.
+`tests/bin/monmux` is an executable shell script that answers from `tests/fixtures/`. It is the only
+`monmux` any automated thing in this repository is allowed to see, and it exists **for the nested
+Shell**: no test spawns it.
 
-It decides nothing. Which document comes back is the caller's choice, made through the environment before the Shell starts,
-because the Shell inherits it:
+It decides nothing. Which document comes back is the caller's choice, made through the environment
+before the Shell starts, because the Shell inherits it:
 
 | Variable | Values | Effect |
 | --- | --- | --- |
@@ -25,34 +28,39 @@ because the Shell inherits it:
 | `MONMUX_FAKE_SWITCH` | a fixture name, default `refused-input-not-enabled` | `switch --json` answers from `switch-<name>.json` |
 | `MONMUX_FAKE_LOG` | a file path, unset by default | every argv the fake received, one shell-quoted line per run |
 
-`MONMUX_FAKE_LOG` is how a click is verified. After exercising the menu in the nested Shell, read that file: it shows the exact
-command line the extension built, which is the only way to prove the argv arrived as an array and not as a shell string.
+`MONMUX_FAKE_LOG` is how a click is verified. After exercising the menu in the nested Shell, read
+that file: it shows the exact command line the extension built, which is the only way to prove the
+argv arrived as an array and not as a shell string.
 
-`MONMUX_FAKE_VERSION=v0.5.0` answers `version --json` the way the release before that flag existed does — cobra's
-`Error: unknown flag: --json` on stderr, nothing on stdout, exit 1 — because that shape is what the extension's version gate
-reads as "too old".
+`MONMUX_FAKE_VERSION=v0.5.0` answers `version --json` the way the release before that flag existed
+does — cobra's `Error: unknown flag: --json` on stderr, nothing on stdout, exit 1 — because that
+shape is what the extension's version gate reads as "too old".
 
-`switch --json` exits 0 for `sent` and `dry-run`, 2 for either `refused-…` fixture and 1 for `failed`. The exit code is written
-next to the fixture name in the script rather than derived from the document's `outcome`: the pairing of the two is monmux's
-contract, and a fake that computed one from the other could not contradict it even where a test wants it to. The default is a
-refusal, so a caller that forgets to set the variable exercises the path where nothing was written.
+`switch --json` exits 0 for `sent` and `dry-run`, 2 for either `refused-…` fixture and 1 for
+`failed`. The exit code is written next to the fixture name in the script rather than derived from
+the document's `outcome`: the pairing of the two is monmux's contract, and a fake that computed one
+from the other could not contradict it even where a test wants it to. The default is a refusal, so a
+caller that forgets to set the variable exercises the path where nothing was written.
 
-`info --json` is read-only and can still fail, so the fake pairs each variant with a code too. `checks-failing` is the state
-where `ddcutil` is missing, and the real binary answers it by printing the report on stdout anyway — the report is the
-diagnostic for exactly that failure — putting one line on stderr:
+`info --json` is read-only and can still fail, so the fake pairs each variant with a code too.
+`checks-failing` is the state where `ddcutil` is missing, and the real binary answers it by printing
+the report on stdout anyway — the report is the diagnostic for exactly that failure — putting one
+line on stderr:
 
 ```text
 Not ready: backend-not-ready: ddcutil was not found on PATH: exec: "ddcutil": executable file not found in $PATH
 ```
 
-and exiting **2**, not 1. `cli.info` wraps the preflight refusal in a `readOnlyError`, and `exitCode()` unwraps that and finds
-a refusal, which is the code a refusal gets. Every other variant exits 0 with nothing on stderr. A variant the script does not
-know exits 70 rather than reaching for a fixture that may not exist.
+and exiting **2**, not 1. `cli.info` wraps the preflight refusal in a `readOnlyError`, and
+`exitCode()` unwraps that and finds a refusal, which is the code a refusal gets. Every other variant
+exits 0 with nothing on stderr. A variant the script does not know exits 70 rather than reaching for
+a fixture that may not exist.
 
-`catalog list --json` answers from the captured catalog, and `doctor` from the captured `doctor.txt`, as prose and with exit 0.
-Anything else — `catalog show`, `doctor --show-serial`, `info --show-serial` for a variant with no `-serials` fixture, a
-`switch` without `--json` — exits 70 with a message saying it is not faked. Failing loudly beats answering with something
-invented: a fake that decides differently from the real tool turns a green suite into a lie.
+`catalog list --json` answers from the captured catalog, and `doctor` from the captured
+`doctor.txt`, as prose and with exit 0. Anything else — `catalog show`, `doctor --show-serial`,
+`info --show-serial` for a variant with no `-serials` fixture, a `switch` without `--json` — exits
+70 with a message saying it is not faked. Failing loudly beats answering with something invented: a
+fake that decides differently from the real tool turns a green suite into a lie.
 
 ### The fixtures
 
@@ -68,44 +76,52 @@ Two kinds, and the difference matters when one of them disagrees with the real b
 | every other `info-*.json` | constructed: a display situation this machine does not have |
 | every `switch-*.json` | constructed: written against [monmux's `docs/json.md`](https://github.com/leinardi/monmux/blob/main/docs/json.md) |
 
-The commit is written down because the v0.6.0 tag is not in a monmux checkout yet: that build was installed before it was
-tagged. Check these two against `monmux version --json` on the machine, not against the tags in a clone — a clone without the
-tag says nothing about which binary is installed.
+The commit is written down because the v0.6.0 tag is not in a monmux checkout yet: that build was
+installed before it was tagged. Check these two against `monmux version --json` on the machine, not
+against the tags in a clone — a clone without the tag says nothing about which binary is installed.
 
-The `switch-*.json` documents are constructed because no agent may run `monmux switch`, dry run included — see
-[AGENTS.md](../AGENTS.md). They follow the published contract field for field, and the human checklist compares their shape
-with what the real binary answers.
+The `switch-*.json` documents are constructed because no agent may run `monmux switch`, dry run
+included — see [AGENTS.md](../AGENTS.md). They follow the published contract field for field, and
+the human checklist compares their shape with what the real binary answers.
 
-`info-not-write-enabled.json` deserves a note of its own. It is a display that matches the catalog **exactly** and whose model
-is not write-enabled, so `enabledInputs` is empty while the catalog still records inputs for it — the state the menu greys out
-with a "test and report this monitor" call to action. Today's monmux cannot produce it: only write-enabled entries carry EDID
-identities, and matching is on identities alone, so a non-write-enabled model always comes back as `match: none`. The contract
-permits it, a later catalog entry can create it, and the extension has to render it correctly before then.
+`info-not-write-enabled.json` deserves a note of its own. It is a display that matches the
+catalog **exactly** and whose model is not write-enabled, so `enabledInputs` is empty while the
+catalog still records inputs for it — the state the menu greys out with a "test and report this
+monitor" call to action. Today's monmux cannot produce it: only write-enabled entries carry EDID
+identities, and matching is on identities alone, so a non-write-enabled model always comes back as
+`match: none`. The contract permits it, a later catalog entry can create it, and the extension has
+to render it correctly before then.
 
-`info-two-supported.json` is constructed the same way: two writable displays of two different models, both matched exactly,
-which is the case monmux's `multiple-candidates` rule is about. Only the LG entry is write-enabled in today's catalog, so the
-Dell half cannot come from a real binary yet; the menu has to handle it all the same.
+`info-two-supported.json` is constructed the same way: two writable displays of two different
+models, both matched exactly, which is the case monmux's `multiple-candidates` rule is about. Only
+the LG entry is write-enabled in today's catalog, so the Dell half cannot come from a real binary
+yet; the menu has to handle it all the same.
 
-Fixtures carry synthetic serials and nothing else. Only the two `info-*-serials.json` fixtures carry any — `SYNTHLG0001`,
-`SYNTHLG0002` and `SYNTHDELL0002`, which no monitor has — and they stand for `info --json --show-serial`. Every other fixture is
-redacted, which is what `monmux` prints unless `--show-serial` is passed. A real serial must never be committed.
+Fixtures carry synthetic serials and nothing else. Only the two `info-*-serials.json` fixtures carry
+any — `SYNTHLG0001`, `SYNTHLG0002` and `SYNTHDELL0002`, which no monitor has — and they stand for
+`info --json --show-serial`. Every other fixture is redacted, which is what `monmux` prints unless
+`--show-serial` is passed. A real serial must never be committed.
 
 ## How the suite refuses to touch hardware
 
 Two layers, and the second is the one that matters:
 
-1. The `test` script in `package.json` prepends `tests/bin` to `PATH`, so every entry point — `make ext-test`, the `ext-test`
-   pre-commit hook, CI, an IDE run of the npm script — resolves the fake.
-2. `tests/main.js` then calls `GLib.find_program_in_path('monmux')` and compares it against `tests/bin/monmux`. If it is
-   anything else, or nothing at all, the process prints why and exits 1 **before the first test runs**. Nothing local — not the
-   test files, not even the harness — is imported statically, for exactly this reason: a static import is evaluated before the
-   first statement of the module, so it would run before the guard and make it a guard over nothing. Everything local arrives
-   through a dynamic `import()` after the check.
+1. The `test` script in `package.json` prepends `tests/bin` to `PATH`, so every entry point —
+   `make ext-test`, the `ext-test` pre-commit hook, CI, an IDE run of the npm script — resolves the
+   fake.
+2. `tests/main.js` then calls `GLib.find_program_in_path('monmux')` and compares it against
+   `tests/bin/monmux`. If it is anything else, or nothing at all, the process prints why and exits
+   1 **before the first test runs**. Nothing local — not the test files, not even the harness — is
+   imported statically, for exactly this reason: a static import is evaluated before the first
+   statement of the module, so it would run before the guard and make it a guard over nothing.
+   Everything local arrives through a dynamic `import()` after the check.
 
-There is no third layer inside the tests, because there is nothing to guard: **no test spawns a process, and none may.** The
-fake exists for the nested Shell, not for the suite — a unit test drives a module directly, with a runner it supplies itself,
-so a subprocess never enters the picture. The `PATH` guard above stays as the belt for that rule rather than as support for an
-exception to it: it is what makes a suite that started spawning something unable to reach a real monitor.
+There is no third layer inside the tests, because there is nothing to guard: **no test spawns a
+process, and none may.** The fake exists for the nested Shell, not for the suite — a unit test
+drives a module directly, with a runner it supplies itself, so a subprocess never enters the
+picture. The `PATH` guard above stays as the belt for that rule rather than as support for an
+exception to it: it is what makes a suite that started spawning something unable to reach a real
+monitor.
 
 You can prove the guard works:
 
@@ -113,8 +129,9 @@ You can prove the guard works:
 gjs -m tests/main.js       # without the PATH the npm script sets
 ```
 
-On a machine with the real `monmux` installed this prints `refusing to run: monmux on PATH is /usr/bin/monmux` and exits 1.
-On a machine without one it prints `no monmux on PATH`. Neither runs a test.
+On a machine with the real `monmux` installed this prints
+`refusing to run: monmux on PATH is /usr/bin/monmux` and exits 1. On a machine without one it prints
+`no monmux on PATH`. Neither runs a test.
 
 ## The nested Shell
 
@@ -122,21 +139,24 @@ On a machine without one it prints `no monmux on PATH`. Neither runs a test.
 make ext-nested
 ```
 
-starts `gnome-shell --devkit --wayland` under `dbus-run-session` with `tests/bin` first on `PATH` and `G_MESSAGES_DEBUG` set to
-the `GNOME Shell` and `Gjs` domains. Not `all`: that turns on debug output for every library in the process, and dconf alone
-buries startup and teardown — the two moments worth reading — under a watch/unwatch line per settings path per extension.
-Warnings are not debug-level and print either way. `make ext-nested G_MESSAGES_DEBUG=all` when you need somebody else's library.
-The Shell inside that session — and therefore the extension inside it, and therefore any click in its menu — can only resolve
-the fake. **That is what makes this target safe for an agent to run**, and it is why the `PATH` prefix is not a convenience to
-be dropped when something does not work.
+starts `gnome-shell --devkit --wayland` under `dbus-run-session` with `tests/bin` first on `PATH`
+and `G_MESSAGES_DEBUG` set to the `GNOME Shell` and `Gjs` domains. Not `all`: that turns on debug
+output for every library in the process, and dconf alone buries startup and teardown — the two
+moments worth reading — under a watch/unwatch line per settings path per extension. Warnings are not
+debug-level and print either way. `make ext-nested G_MESSAGES_DEBUG=all` when you need somebody
+else's library. The Shell inside that session — and therefore the extension inside it, and therefore
+any click in its menu — can only resolve the fake. **That is what makes this target safe for an
+agent to run**, and it is why the `PATH` prefix is not a convenience to be dropped when something
+does not work.
 
-Inside the nested Shell, install and enable the build under test, open the menu, and watch the terminal for warnings. A leak on
-`disable()` almost always announces itself there.
+Inside the nested Shell, install and enable the build under test, open the menu, and watch the
+terminal for warnings. A leak on `disable()` almost always announces itself there.
 
-`--devkit` needs GNOME Shell 48 or newer. On an older host, run the nested Shell the way that host documents; the `PATH`
-prefix is the part that must not change.
+`--devkit` needs GNOME Shell 48 or newer. On an older host, run the nested Shell the way that host
+documents; the `PATH` prefix is the part that must not change.
 
-A nested session against the **real** `monmux` is a human's manual command, not a target in this repository:
+A nested session against the **real** `monmux` is a human's manual command, not a target in this
+repository:
 
 ```sh
 dbus-run-session -- gnome-shell --devkit --wayland
@@ -144,23 +164,25 @@ dbus-run-session -- gnome-shell --devkit --wayland
 
 ## The human hardware checklist
 
-Run this before a release, and whenever a change touches the switch path. It is the whole of the hardware verification: work
-through it top to bottom, and nothing here may be delegated to an agent. The order matters: the `monmux` side comes first,
-because the extension gates on it, and nothing touches a monitor until the binary under test has been shown to answer in the
-shapes the suite's fixtures have.
+Run this before a release, and whenever a change touches the switch path. It is the whole of the
+hardware verification: work through it top to bottom, and nothing here may be delegated to an agent.
+The order matters: the `monmux` side comes first, because the extension gates on it, and nothing
+touches a monitor until the binary under test has been shown to answer in the shapes the suite's
+fixtures have.
 
-Keep `make ext-logs` running in a second terminal from step 6 onwards. Any warning, critical or `JS ERROR` that mentions
-`monmux` fails the step it appeared in. What each greyed reason and each notification means is in the
-[README](../README.md#why-something-is-greyed-out).
+Keep `make ext-logs` running in a second terminal from step 6 onwards. Any warning, critical or
+`JS ERROR` that mentions `monmux` fails the step it appeared in. What each greyed reason and each
+notification means is in the [README](../README.md#why-something-is-greyed-out).
 
-Record what happened in the pull request, step by step. If a step changed a monitor's input, say which monitor, which input,
-and what the monitor's on-screen display showed — that is the evidence, and for a new model it belongs in a monitor report in
-the [monmux](https://github.com/leinardi/monmux) repository.
+Record what happened in the pull request, step by step. If a step changed a monitor's input, say
+which monitor, which input, and what the monitor's on-screen display showed — that is the evidence,
+and for a new model it belongs in a monitor report in the
+[monmux](https://github.com/leinardi/monmux) repository.
 
 ### monmux
 
-Either install a `monmux` release, or build one with `make go-build` in a `monmux` checkout and put its `dist/monmux` first on
-`PATH`. The version gate accepts the `dev` version such a build reports.
+Either install a `monmux` release, or build one with `make go-build` in a `monmux` checkout and put
+its `dist/monmux` first on `PATH`. The version gate accepts the `dev` version such a build reports.
 
 | # | Step | Expected |
 | --- | --- | --- |
@@ -170,10 +192,11 @@ Either install a `monmux` release, or build one with `make go-build` in a `monmu
 
 ### Contract drift
 
-Before any real click, capture what the binary under test answers into a scratch directory, and compare its shape — every
-field path and its JSON type — with the fixtures the suite reads. The values are expected to differ: the version, the
-connector, what the catalog holds. The fixtures stay as they are, because the tests pin the values in them. The four
-`monmux` commands only read, and the comparison needs `jq`. From the repository root:
+Before any real click, capture what the binary under test answers into a scratch directory, and
+compare its shape — every field path and its JSON type — with the fixtures the suite reads. The
+values are expected to differ: the version, the connector, what the catalog holds. The fixtures stay
+as they are, because the tests pin the values in them. The four `monmux` commands only read, and the
+comparison needs `jq`. From the repository root:
 
 ```sh
 mkdir -p ~/monmux-capture
@@ -221,8 +244,8 @@ done
 
 ### Serial targeting
 
-Only with two supported monitors attached. Skip it otherwise, and say so in the record: until it is done, serial targeting
-stays marked as not hardware-verified.
+Only with two supported monitors attached. Skip it otherwise, and say so in the record: until it is
+done, serial targeting stays marked as not hardware-verified.
 
 | # | Step | Expected |
 | --- | --- | --- |
@@ -243,13 +266,13 @@ stays marked as not hardware-verified.
 
 ### The sent and refused answers
 
-Step 4 compared the dry run. The other two `switch` fixtures can only be compared after a real switch, so they come last,
-with the `shape` function from step 4:
+Step 4 compared the dry run. The other two `switch` fixtures can only be compared after a real
+switch, so they come last, with the `shape` function from step 4:
 
 | # | Step | Expected |
 | --- | --- | --- |
 | 26 | `monmux switch dp --json > ~/monmux-capture/switch-sent.json`, then `diff <(shape tests/fixtures/switch-sent.json) <(shape ~/monmux-capture/switch-sent.json)` | the monitor switches; the shapes agree, judged as in step 4 |
 | 27 | `monmux switch <input> --json > ~/monmux-capture/switch-refused.json` for the input from step 15, then `diff <(shape tests/fixtures/switch-refused-input-not-enabled.json) <(shape ~/monmux-capture/switch-refused.json)` | a refusal, and nothing on the monitor changes; the shapes agree, judged as in step 4 |
 
-Drift found here is handled as in step 5: a `docs/json.md` change in `monmux` first, then the fixtures and the tests that read
-them.
+Drift found here is handled as in step 5: a `docs/json.md` change in `monmux` first, then the
+fixtures and the tests that read them.

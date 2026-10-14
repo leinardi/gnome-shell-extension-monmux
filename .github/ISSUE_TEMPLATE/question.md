@@ -7,8 +7,9 @@ assignees: []
 ---
 ## Step 1: Is this the extension, or is it monmux?
 
-This repository is **only** the GNOME Shell extension. Questions about what `monmux` does, which monitors it supports, why it
-refused something, or how to run it from a terminal belong to [leinardi/monmux](https://github.com/leinardi/monmux).
+This repository is **only** the GNOME Shell extension. Questions about what `monmux` does, which
+monitors it supports, why it refused something, or how to run it from a terminal belong to
+[leinardi/monmux](https://github.com/leinardi/monmux).
 
 | Question | Where it belongs |
 | --- | --- |

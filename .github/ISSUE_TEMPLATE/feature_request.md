@@ -7,10 +7,11 @@ assignees: []
 ---
 ## Step 1: Is this the extension, or is it monmux?
 
-This repository is **only** the GNOME Shell extension: the panel indicator, its menu, its notifications, its preferences
-window, and its packaging. What may be written to which monitor is decided by
-[leinardi/monmux](https://github.com/leinardi/monmux), against evidence recorded in its catalog. The extension renders those
-decisions and cannot widen them, so a request to switch something monmux refuses is a request to monmux.
+This repository is **only** the GNOME Shell extension: the panel indicator, its menu, its
+notifications, its preferences window, and its packaging. What may be written to which monitor is
+decided by [leinardi/monmux](https://github.com/leinardi/monmux), against evidence recorded in its
+catalog. The extension renders those decisions and cannot widen them, so a request to switch
+something monmux refuses is a request to monmux.
 
 | Request | Where it belongs |
 | --- | --- |
@@ -26,8 +27,9 @@ decisions and cannot widen them, so a request to switch something monmux refuses
 
 * [ ] This is about the extension's user interface or behaviour, not about what monmux decides.
 * [ ] I have checked the existing issues to confirm this feature has not already been requested.
-* [ ] This is **not** a request for the extension to work around a monmux refusal, to guess at a monitor, to expose a raw VCP
-  code or value, or to show which input a monitor is currently on. Those are refused by design —
+* [ ] This is **not** a request for the extension to work around a monmux refusal, to guess at a
+  monitor, to expose a raw VCP code or value, or to show which input a monitor is currently on.
+  Those are refused by design —
   [AGENTS.md](https://github.com/leinardi/gnome-shell-extension-monmux/blob/main/AGENTS.md).
 
 ---
@@ -53,10 +55,10 @@ decisions and cannot widen them, so a request to switch something monmux refuses
 <!-- Describe how you imagine this feature working. Be as specific as possible. -->
 
 * **High-level description:**
-    *
+  *
 
 * **Example usage / scenario:**
-    *
+  *
 
 ---
 
@@ -70,7 +72,8 @@ decisions and cannot widen them, so a request to switch something monmux refuses
 
 ## 5. Impact and scope
 
-* **Who benefits from this feature?** (e.g., all users, specific GNOME Shell versions, specific setups)
+* **Who benefits from this feature?** (e.g., all users, specific GNOME Shell versions, specific
+  setups)
 * **Does it need anything from monmux that does not exist yet?** If so, link the monmux issue.
 * **Does this introduce any breaking changes or require migration?**
 

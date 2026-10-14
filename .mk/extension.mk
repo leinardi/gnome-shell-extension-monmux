@@ -1,3 +1,21 @@
+#
+# This file is part of the monmux GNOME Shell extension.
+#
+# Copyright (c) 2026 Roberto Leinardi
+#
+# The monmux GNOME Shell extension is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# The monmux GNOME Shell extension is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 ifndef MK_LOCAL_EXTENSION_INCLUDED
 MK_LOCAL_EXTENSION_INCLUDED := 1
 
@@ -111,6 +129,13 @@ ext-nested: ## Start a nested GNOME Shell that can only see the fake monmux
 .PHONY: ext-logs
 ext-logs: ## Follow the GNOME Shell log
 	@journalctl -f -o cat /usr/bin/gnome-shell
+
+# Both scripts are also pre-commit hooks: the check runs on every commit, its test
+# whenever either script changes.
+.PHONY: ext-license
+ext-license: ## Check every source file for the GPL-2.0-or-later header, and test the check
+	@scripts/check-license-headers.sh
+	@scripts/test-license-headers.sh
 
 .PHONY: verify
 verify: ext-lint ext-typecheck ext-test ext-pot-check ext-schemas ext-pack ## Everything CI runs, in one target
