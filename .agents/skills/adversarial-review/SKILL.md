@@ -21,64 +21,40 @@ when nobody knows, or drifts from a documented contract. Find the concrete input
 point where it fails. Do not praise or restyle the change. A review with no findings is credible
 only after active attempts to break the changed behaviour.
 
-This skill is the entry point for reviewing any change in this repository. `AGENTS.md` and the
-project documentation remain the sources of truth; this skill defines review procedure and
-reporting.
+This skill routes to the project's authorities rather than replacing them: `AGENTS.md` and the
+project documentation own the rules.
 
-Copy this checklist and tick items as you go:
+## Hard rule: reviewing never switches a monitor
 
-```text
-Review progress:
-- [ ] 0. No-write rule acknowledged; only read-only commands from here on
-- [ ] 1. Diff and stated intent read; every changed file read with its context
-- [ ] 2. AGENTS.md and the documents for the changed paths loaded
-- [ ] 3. Repository invariants checked
-- [ ] 4. Adversarial passes run
-- [ ] 5. Gates run, or marked unverified; hardware checks written for the human
-- [ ] 6. Report written: ranked findings, verdict, gates run
-```
-
-## 0. The hard rule, during review too
-
-**Reviewing never switches a monitor.** The `AGENTS.md` prohibition applies to this skill exactly as
-it applies to implementation. In this repository the write is a click, so: no picking an input in a
-Shell whose `monmux` is the real binary, no `gnome-extensions enable` of a build in the user's live
-session followed by interaction, no `make ext-nested` with `tests/bin` off `PATH`, no
-`monmux switch` without `--dry-run`, no `ddcutil setvcp`, no `m1ddc … set …`, no
-`i2cset`/`i2ctransfer`.
+The `AGENTS.md` prohibition applies to this skill exactly as it applies to implementation. In this
+repository the write is a click, so: no picking an input in a Shell whose `monmux` is the real
+binary, no `gnome-extensions enable` of a build in the user's live session followed by
+interaction, no `make ext-nested` with `tests/bin` off `PATH`, no `monmux switch` without
+`--dry-run`, no `ddcutil setvcp`, no `m1ddc … set …`, no `i2cset`/`i2ctransfer`.
 
 Read-only verification is allowed: `make ext-nested` as written (the fake is the only `monmux` it
 can resolve), `monmux info`, `monmux doctor`, `monmux catalog …`, `monmux switch … --dry-run`,
 `gnome-extensions info`, reading `/sys/class/drm/**`. Anything a reviewer wants proven on real
 hardware goes into the report as a command for the human to run, never executed here.
 
-Also read `.agents/skills/gjs-style-guide/SKILL.md` before judging style; the enforced rules live
-there, not in your habits.
+## Scope
 
-## 1. Establish the diff
+When invoked directly: review the scope the user gives (`gh pr view <n>` for intent, then `gh pr
+diff <n>`); with none, the uncommitted work (`git diff HEAD` plus untracked files, which no diff
+shows); on a clean tree, `git diff main...HEAD`. Never review from memory or only from the user's
+description of the change.
 
-Never review from memory or only from the user's description. Read the actual diff and determine its
-intent. With no scope given, review the uncommitted work; if the tree is clean, review the branch
-against `main`.
+Read the stated intent (`git log --oneline` for the range, any linked issue or PR body): code that
+works but does something other than the stated intent is a finding. Read every changed file with
+enough surrounding context to understand its contracts. For a behaviour change, inspect callers,
+the tests, and the docs that depend on the changed symbol. A change to a widget's lifecycle needs
+the matching `disable()` read in full, not skimmed.
 
-| User intent | Command |
-| --- | --- |
-| "my work", "before I commit", uncommitted changes | `git status --short`, then `git diff HEAD`; inspect untracked files too |
-| staged changes only | `git diff --staged` |
-| branch, "this PR", "ready to merge" | determine the base branch (`main`), then `git diff main...HEAD` |
-| specific commit range | `git diff <base>..<head>` |
-| GitHub PR number | `gh pr view <n>` for intent and metadata, then `gh pr diff <n>` |
+## Authority (path → authority)
 
-Read `git log --oneline` for the reviewed range and any linked issue or PR body. Code that works but
-does something other than the stated intent is a finding.
-
-Read every changed file with enough surrounding context to understand its contracts. For a behaviour
-change, inspect callers, the tests, and the docs that depend on the changed symbol. A change to a
-widget's lifecycle needs the matching `disable()` read in full, not skimmed.
-
-## 2. Load project authority
-
-Always read `AGENTS.md`. Load only the additional documentation relevant to the changed paths:
+Always read `AGENTS.md`. Also read `.agents/skills/gjs-style-guide/SKILL.md` before judging style;
+the enforced rules live there, not in your habits. Load only the additional documentation relevant
+to the changed paths:
 
 | Changed area | Read | Review focus |
 | --- | --- | --- |
@@ -87,7 +63,7 @@ Always read `AGENTS.md`. Load only the additional documentation relevant to the 
 | `src/lib/serials.js` | `AGENTS.md` invariant "No serial is shown unless the user opted in" | `--show-serial` only while the user opted in; nothing it reads is rendered or logged, a failure included; serials stay out of the model |
 | `src/lib/reasons.js`, `src/lib/links.js` | `AGENTS.md` layout notes for both modules | the only sources of user-visible text and of URLs; every string a literal inside `_()`, with a `// Translators:` comment for each placeholder |
 | `src/lib/**` (other) | `.agents/skills/gjs-style-guide/SKILL.md` | purity: no Shell import, no St, no Clutter; testable under plain gjs |
-| `src/extension.js` | `AGENTS.md` invariant "Everything created in `enable()` dies in `disable()`", the extensions.gnome.org (e.g.o) rules in §3 | enable/disable symmetry, signal ids, GLib sources, nothing created in a constructor, no main-loop blocking |
+| `src/extension.js` | `AGENTS.md` invariant "Everything created in `enable()` dies in `disable()`", the extensions.gnome.org (e.g.o) rules in the repository invariants | enable/disable symmetry, signal ids, GLib sources, nothing created in a constructor, no main-loop blocking |
 | `src/ui/**` | the same lifecycle invariant, `AGENTS.md` layout notes for `src/ui/` | no sentence or URL of its own, nothing spawns, `indicator.button` added and destroyed through the indicator, every signal id released |
 | `src/prefs.js` | `.agents/skills/gjs-style-guide/SKILL.md` | GTK only, no St/Clutter, no `resource:///org/gnome/shell/ui/…`, `monmux` only through `readOnly(spawn)`, schema keys that exist |
 | `src/metadata.json`, `src/schemas/**` | `scripts/check-metadata.js` | uuid, shell-version list, settings-schema present in the zip, gettext domain, no `version` key |
@@ -97,9 +73,9 @@ Always read `AGENTS.md`. Load only the additional documentation relevant to the 
 | `README.md`, `CONTRIBUTING.md`, docs | — | claims that match the code, no feature described that the code does not implement |
 
 No matching document does not mean lighter review. Apply `AGENTS.md`, the invariants below, and the
-general adversarial passes.
+passes below.
 
-## 3. Repository invariants
+## Repository invariants
 
 `AGENTS.md` § Invariants is the checklist; read it in full. Weakening any invariant is normally a
 blocker. What to look for while reviewing:
@@ -142,10 +118,21 @@ blocker. What to look for while reviewing:
 - **Workflows stay pinned and least-privilege.** `contents: read` at the top, extra permissions per
   job with the reason; every action pinned to a full commit SHA with a `# vX.Y.Z` comment; inputs
   reach shell through `env:`, never `${{ }}` inside `run:`.
+- **Commit type matches whether it ships.** `svu` derives the release from the commit types since
+  the last tag, and pull requests land as merge commits, so every commit counts. What ships here is
+  the extension zip, `monmux@leinardi.github.io.shell-extension.zip`: exactly what `ext-pack` packs
+  from `src/` and the compiled `po/` catalogs. A change to the zip that users should receive, typed
+  `chore`, `docs`, `refactor`, `perf` or `style`, never ships on its own: a finding. So is a
+  `feat`/`fix` on a change that leaves the zip alone (CI, docs, tests, tooling, `scripts/`), which
+  cuts a release with nothing in it; a stray `!` or `BREAKING CHANGE:` footer, which cuts a major;
+  and a word ending in `feat` or `fix` right before a colon in any subject (`prefix:`), which `svu`
+  counts as `fix`. A `revert` of a shipped `feat` or `fix` is itself a `fix`.
 
-## 4. Adversarial passes
+## Adversarial passes
 
-Do not skim for style. Run each pass with "how can this fail?" framing:
+Beyond the generic passes (logic, nil and empty input, aliasing, error handling, concurrency,
+resources, security), run each pass with "how can this fail?" framing, and name one concrete
+failing input or state per candidate rather than asserting "looks fine":
 
 - **monmux is missing or old:** no `monmux` on `PATH` at all; a `monmux` that exits 127; one whose
   `--json` flag does not exist yet; one that prints valid JSON with a field this code requires
@@ -183,15 +170,6 @@ Do not skim for style. Run each pass with "how can this fail?" framing:
 - **Contract drift:** compare the implementation against `README.md`, `AGENTS.md`,
   `docs/testing.md`, `src/metadata.json` and the commit or PR intent. Flag any undocumented setting,
   string, shortcut, shell-version change or new dependency.
-- **Commit type matches whether it ships:** `svu` derives the release from the commit types since
-  the last tag, and pull requests land as merge commits, so every commit counts. What ships here is
-  the extension zip, `monmux@leinardi.github.io.shell-extension.zip`: exactly what `ext-pack` packs
-  from `src/` and the compiled `po/` catalogs. A change to the zip that users should receive, typed
-  `chore`, `docs`, `refactor`, `perf` or `style`, never ships on its own: a finding. So is a
-  `feat`/`fix` on a change that leaves the zip alone (CI, docs, tests, tooling, `scripts/`), which
-  cuts a release with nothing in it; a stray `!` or `BREAKING CHANGE:` footer, which cuts a major;
-  and a word ending in `feat` or `fix` right before a colon in any subject (`prefix:`), which `svu`
-  counts as `fix`. A `revert` of a shipped `feat` or `fix` is itself a `fix`.
 - **A meta-test that can no longer fail:** `tests/main.js`'s PATH guard, `scripts/check-bundle.js`,
   `scripts/check-metadata.js`, `scripts/check-pot.js`, `scripts/check-license-headers.sh` and
   `scripts/test-license-headers.sh` guard claims nothing else checks. Break the guarded thing once
@@ -201,45 +179,33 @@ Do not skim for style. Run each pass with "how can this fail?" framing:
   check that passes because its file list is empty, its pattern no longer matches anything, or its
   loop never ran is a false pass: a finding.
 
-For every suspected defect, run this loop:
+## Gates
 
-1. Reproduce it with a read-only command, or trace the triggering state through the code to the
-   wrong result.
-2. Confirmed (you can name the state and the wrong result or broken invariant)? Report it.
-3. Not confirmed? Dig once more — read the caller, the test, or the fake's fixture. Still nothing?
-   Drop it.
+Do not re-run the repository's gates (`make ext-lint`, `make ext-typecheck`, `make ext-test`, `make
+verify`, `make ext-nested`, `make ext-pot-check`, `make ext-schemas`, `make ext-pack`, `make
+check-stage`, `make ext-license`, `make ext-deps`, `make check`). The implementer is expected to run
+them and CI runs them again, but do not assume either happened: report the verification evidence you
+actually have (under adversarial-review-loop, `verification.txt` when supplied, which is the
+implementer's claim and not proof; when invoked directly, the CI status or gate output in the PR or
+session) and what is missing, such as a UI or lifecycle change with no `make verify` or `make
+ext-nested` result, or a `disable()` warning in the nested Shell's journal (a leak usually announces
+itself there), or a `scripts/check-*` change with no result from the target that runs it (`make
+check-stage` for `check-metadata.js`, `make ext-pack` for `check-bundle.js`, `make ext-pot-check`
+for `check-pot.js`, `make ext-license` for the license-header scripts). Judge what is missing
+against `AGENTS.md`'s *Validation matrix*: every changed path owes the checks its row names. A
+failure in that evidence caused by the change is a confirmed finding. Never say that a check you did
+not see passed. Judge whether the change's tests prove it: a behaviour change needs a test that
+fails on the old code. There is no focused test runner: `tests/main.js` imports every test file
+behind the guard that puts the fake `monmux` on `PATH`, and a test file run on its own skips that
+guard. So confirm a suspected finding by tracing it statically; when invoked directly, the only
+command allowed is `npx eslint <file>` on one changed file, never a suite or gate. A candidate that
+is neither reproduced nor traced end to end is dropped: a vague "consider" is not a finding.
 
-## 5. Verify findings and gates
+Hardware behaviour is never something you run. A finding that can only be settled by switching a
+real monitor gets the exact steps for the human, in the format of the checklist in
+`docs/testing.md`, and is marked unresolved.
 
-Use focused runs while investigating (`npm run test`, `npx eslint src/lib`), then run the gate the
-changed set owes. Verification is read-only by construction: the suite executes no external binary,
-and no gate here can reach a monitor.
-
-| Diff touched | Run |
-| --- | --- |
-| `src/lib/**` or `tests/**` | `make ext-lint`, `make ext-typecheck`, `make ext-test` |
-| `src/extension.js`, `src/ui/**`, `src/prefs.js`, `src/stylesheet.css` | `make verify`, then `make ext-nested` and open the menu |
-| a user-visible string, `po/**` | `make ext-pot-check` (needs gettext) |
-| `src/metadata.json`, `src/schemas/**` | `make ext-schemas`, `make ext-pack`, then `make check-stage` |
-| `scripts/check-*.js` | `make ext-lint`, then the target that runs the script: `make check-stage` (`ext-metadata` hook) for `check-metadata.js`, `make ext-pack` for `check-bundle.js`, `make ext-pot-check` for `check-pot.js` |
-| `scripts/check-license-headers.sh`, `scripts/test-license-headers.sh` | `make ext-license`, and the mutation from the meta-test pass in §4 |
-| `package.json`, `eslint.config.js`, `tsconfig.json`, `ambient.d.ts` | `make ext-deps`, then `make verify` |
-| `Makefile`, `.mk/**`, `.pre-commit-config.yaml`, `.github/**` | `make check` |
-| broad change or merge-readiness review | `make verify`, then `make check` |
-| docs or skill only | `make check` and inspect the rendered content and links |
-
-`make ext-nested` is a gate a reviewer may run: the Shell inside it can only resolve
-`tests/bin/monmux`. Check the journal it prints for warnings on `disable()` — a leak usually
-announces itself there.
-
-A failing gate is a confirmed finding when the reviewed change caused it. If a gate cannot run,
-state why and mark it unverified; never imply it passed.
-
-Hardware behaviour is never a gate you run. If a finding can only be settled by switching a real
-monitor, write the exact steps for the human — the checklist in `docs/testing.md` is the format —
-and mark the finding unresolved.
-
-## 6. Report
+## Report
 
 Rank findings by severity, worst first. A false "nothing was written" promise, a subprocess that is
 not an argv array or that takes a configurable path, a re-implemented policy decision, a callback
@@ -256,7 +222,7 @@ For each finding:
 ```
 
 Put findings first. Then list open questions or assumptions, followed by any hardware checks the
-human must run, followed by a one-line verdict: **block**, **approve with nits**, or **approve**.
-Include gates actually run and gates not run. If no findings exist, say so explicitly and briefly
-name the failure modes you tried to trigger. Be blunt, but never invent a finding to appear
-thorough.
+human must run, followed by a one-line verdict: **block**, **approve with nits**, or **approve**,
+and one line: `Verification evidence: seen … / missing …`. If no findings exist, say so explicitly
+and briefly name the failure modes you tried to trigger. Be blunt, but never invent a finding to
+appear thorough.
