@@ -191,14 +191,15 @@ session) and what is missing, such as a UI or lifecycle change with no `make ver
 ext-nested` result, or a `disable()` warning in the nested Shell's journal (a leak usually announces
 itself there), or a `scripts/check-*` change with no result from the target that runs it (`make
 check-stage` for `check-metadata.js`, `make ext-pack` for `check-bundle.js`, `make ext-pot-check`
-for `check-pot.js`, `make ext-license` for the license-header scripts). A failure in that evidence
-caused by the change is a confirmed finding. Never say that a check you did not see passed. Judge
-whether the change's tests prove it: a behaviour change needs a test that fails on the old code.
-There is no focused test runner: `tests/main.js` imports every test file behind the guard that puts
-the fake `monmux` on `PATH`, and a test file run on its own skips that guard. So confirm a suspected
-finding by tracing it statically; when invoked directly, the only command allowed is `npx eslint
-<file>` on one changed file, never a suite or gate. A candidate that is neither reproduced nor
-traced end to end is dropped: a vague "consider" is not a finding.
+for `check-pot.js`, `make ext-license` for the license-header scripts). Judge what is missing
+against `AGENTS.md`'s *Validation matrix*: every changed path owes the checks its row names. A
+failure in that evidence caused by the change is a confirmed finding. Never say that a check you did
+not see passed. Judge whether the change's tests prove it: a behaviour change needs a test that
+fails on the old code. There is no focused test runner: `tests/main.js` imports every test file
+behind the guard that puts the fake `monmux` on `PATH`, and a test file run on its own skips that
+guard. So confirm a suspected finding by tracing it statically; when invoked directly, the only
+command allowed is `npx eslint <file>` on one changed file, never a suite or gate. A candidate that
+is neither reproduced nor traced end to end is dropped: a vague "consider" is not a finding.
 
 Hardware behaviour is never something you run. A finding that can only be settled by switching a
 real monitor gets the exact steps for the human, in the format of the checklist in
